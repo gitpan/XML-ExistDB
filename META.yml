@@ -1,0 +1,22 @@
+--- #YAML:1.0
+name:                XML-ExistDB
+version:             0.09
+abstract:            ExistDB interface over XML-RPC
+license:             perl
+author:              
+    - Mark Overmeer
+generated_by:        ExtUtils::MakeMaker version 6.42
+distribution_type:   module
+requires:     
+    Log::Report:                   0.25
+    LWP::UserAgent:                0
+    MIME::Base64:                  0
+    Test::More:                    0.54
+    Test::Pod:                     1.00
+    Time::HiRes:                   0
+    XML::Compile:                  1.08
+    XML::Compile::Cache:           0.93
+    XML::Compile::RPC:             0.13
+meta-spec:
+    url:     http://module-build.sourceforge.net/META-spec-v1.3.html
+    version: 1.3

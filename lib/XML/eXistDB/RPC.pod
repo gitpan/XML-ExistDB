@@ -1,0 +1,1185 @@
+=head1 NAME
+
+XML::eXistDB::RPC - Contact an ExistDB via RPC
+
+=head1 DESCRIPTION
+
+Implementation of the full XML-RPC interface to the ExistDB. This is not
+just an one-on-one implementation, but some methods are smarter.
+
+=head2 Perl interface
+
+The methods in this module provide access to all facilities the XML-RPC
+protocol interface offers. However, some of these calls are on a lower
+level than practical in a programmers interface. A few larger wrapper
+methods were created, most importantly L<uploadDocument()|XML::eXistDB::RPC/"Upload documents"> and
+L<downloadDocument()|XML::eXistDB::RPC/"Download documents">.
+
+Some defaults can be set at initiation (L<new()|XML::eXistDB::RPC/"Constructors">), such that repetition
+can be avoided.
+
+=head2 Definitions
+
+The whole database (I<Repository>) contains sub-databases (I<Collections>),
+which can have sub-collections themselves. Any collection contains
+I<Documents> (indexable XML) and I<Binaries> (raw data). When both documents
+and binaries are accepted, we speak about a I<Resource>.
+
+=head2 Naming convensions
+
+The XML-RPC method names are a mess: an typical example of many years
+of growth. To repair that, consistent naming convensions are introduced.
+
+Any C<describeXXX> collects a HASH with details about XXX. Any C<listXXX>
+collects a list of XXX names.  All Java typical C<get> method names
+were removed in favor of better named alternatives: sometimes C<list>,
+sometimes C<describe>, often something completely different. Class
+attribute getters and setters naming should not be used in interfaces
+(and very not-Perl).
+
+Most methods already had the form "<action><class>" (like "removeCollection"),
+but on some random spots, the "class" was not present in the name.  This
+has been repaired, which lowers the need to read the explanation of the
+methods to understand what they are doing.
+
+=head2 Return codes
+
+RPC is a network protocol. Just like operating calls: you shall always
+check the return status of each call!  Of course, this module could simply
+ignore the existence of fault conditions, to provide a much simpler
+programmers interface. But keep in mind: handling error conditions is
+very important on the long run. A burdon for the first small programs,
+but a desperate need for maintainability.
+
+All method return a LIST, where the first scalar is a return code (RC).
+When that code is '0', all went well.  Otherwise, the code represent the
+transport error or the exception (refusal) as reported by the server
+logic.  In either case, the second scalar in the returned list contains
+the error message.  For instance,
+
+  my ($rc, $details) = $db->describeUser('guest');
+  $rc==0
+      or die "ERROR: cannot get user info for `guest': $details ($rc)\n";
+
+=head1 METHODS
+
+=head2 Constructors
+
+XML::eXistDB::RPC-E<gt>B<new>(OPTIONS)
+
+=over 4
+
+You must either specify your own L<XML::Compile::RPC::Client> object
+with the C<rpc> option, or a C<destination> which will be used to create
+such object.
+
+ Option            --Default
+ chunk_size          32
+ compress_upload     128
+ destination         <undef>
+ password            'guest'
+ prettyprint_upload  <false>
+ repository          '/db'
+ rpc                 <undef>
+ schemas             <created>
+ user                'guest'
+
+. chunk_size => KILOBYTES
+
+=over 4
+
+Send or download data in chunks (fragments) of this size when the size
+exceeds this quantity.  If C<0>, then chunking is disabled.
+
+=back
+
+. compress_upload => KILOBYTES
+
+=over 4
+
+Compress the upload of resources when their size is over this number of
+KILOBYTES in size. This will cost performance mainly on the client.
+
+=back
+
+. destination => URI
+
+=over 4
+
+Where the RPC server is (the ExistDB access point)
+
+=back
+
+. password => STRING
+
+. prettyprint_upload => BOOLEAN
+
+. repository => STRING
+
+=over 4
+
+The repository; the top-level collection.
+
+=back
+
+. rpc => OBJECT
+
+. schemas => OBJECT
+
+=over 4
+
+When you need to do complex things with the eXist schema's, you
+may prepare an L<XML::eXistDB|XML::eXistDB> object beforehand. However, that
+shouldn't be needed under normal cicumstances. By default, such
+object is created for you.
+
+=back
+
+. user => USERNAME
+
+=over 4
+
+Used as default when a username is required. For now, that is only used
+by L<lockResource()|XML::eXistDB::RPC/"Resources">.
+
+=back
+
+=back
+
+=head2 Helpers
+
+$obj-E<gt>B<schemas>
+
+=over 4
+
+Returns the L<XML::eXistDB|XML::eXistDB> object which contains all eXistDB specific
+schema information. At first call, the object will get created for you.
+Once created, you'll always get the same.
+
+=back
+
+$obj-E<gt>B<trace>
+
+=over 4
+
+Returns the trace information from the last command executed over RPC. Nearly
+all methods in this class only perform one RPC call. You can find the timings,
+http request, and http response in the returned HASH.
+
+=back
+
+=head3 Format
+
+A number of methods support formatting options, to control the output.
+With the method call, these parameters can be passed as list with pairs.
+
+ indent:  returns indented pretty-print XML.         yes|no
+ encoding: character encoding used for the output.   <string>
+ omit-xml-declaration: XML declaration to the head.  yes|no
+ expand-xincludes: expand XInclude elements.         yes|no
+ process-xsl-pi: apply stylesheet to the output.     yes|no
+ highlight-matches: show result from fulltext search.elements|attributes|both
+ stylesheet: to apply. rel-path from database        <path>
+ stylesheet-params: stylesheet params                <HASH>
+
+The use of the "stylesheet-params" is simplified compared to the official
+XML-RPC description, with a nested HASH.
+
+=head3 Sending XML
+
+Some method accept a DOCUMENT which can be a XML::LibXML::Document
+node, a string containing XML, a SCALAR (ref-string) with the same, or
+a filename.
+
+=head2 Repository
+
+$obj-E<gt>B<backup>(USER, PASSWORD, TOCOLL, FROMCOLL)
+
+=over 4
+
+Returns success. Create a backup of the FROMCOLL into the TOCOLL, using
+USERname and PASSWORD to write it.  There is also an Xquery function to
+produce backups.
+
+example: 
+
+  my ($rc, $ok) = $db->backup('sys', 'xxx', '/db/orders', '/db/backup');
+  $rc==0 or die "$rc $ok";
+
+=back
+
+$obj-E<gt>B<hasCollection>(COLLECTION)
+
+=over 4
+
+Does the COLLECTION identified by name exist in the repository?
+
+example: 
+
+  my ($rc, $exists) = $db->hasCollection($name);
+  $rc and die "$exists (RC=$rc)";
+  if($exists) ...
+
+=back
+
+$obj-E<gt>B<hasDocument>(DOCNAME)
+
+=over 4
+
+Returns whether a document with NAME exists in the repository.
+
+example: 
+
+  my ($rc, $exists) = $db->hasDocument($name);
+  if($rc==0 && $exists) ....
+
+=back
+
+$obj-E<gt>B<isXACMLEnabled>
+
+=over 4
+
+Returns whether the eXtensible Access Control Markup Language (XACML)
+by OASIS is enabled on the database.
+
+example: 
+
+  my ($rc, $enabled) = $db->isACMLEnabled;
+  if(!$rc && $enable) { ... }
+
+=back
+
+$obj-E<gt>B<shutdown>([DELAY])
+
+=over 4
+
+Shutdown the database.  The DELAY is in milliseconds.
+
+example: 
+
+  my ($rc, $success) = $db->shutdown(3000);  # 3 secs
+  $rc==0 or die "$rc $success";
+
+=back
+
+$obj-E<gt>B<sync>
+
+=over 4
+
+Force the synchronization of all db page cache buffers.
+
+example: 
+
+  my ($rc, $success) = $db->sync;
+
+=back
+
+=head2 Collections
+
+$obj-E<gt>B<collectionCreationDate>([COLLECTION])
+
+=over 4
+
+[non-API] Returns the date of the creation of the COLLECTION, by default
+from the root.
+
+example: 
+
+  my ($rc, $date) = $db->collectionCreationDate($coll);
+  $rc and die "$rc $date";
+  print $date;  # f.i. "2009-10-21T12:13:13Z"
+
+=back
+
+$obj-E<gt>B<configureCollection>(COLLECTION, CONFIGURATION, OPTIONS)
+
+=over 4
+
+The CONFIGURATION is a whole C<.xconfig>, describing the collection.
+This can be a XML::LibXML::Document node, a stringified XML
+document, or a HASH.
+
+When the CONFIGURATION is a HASH, the data will get formatted
+by L<XML::eXistDB::createCollectionConfig()|XML::eXistDB/"Collection configuration (.xconf)">.
+
+The configuration will be placed in C</db/system/config$COLLECTION>,
+inside the database.
+
+ Option  --Default
+ beautify  <new(prettyprint_upload)>
+
+. beautify => BOOLEAN
+
+=over 4
+
+Produce a readible configuration file.
+
+=back
+
+example: 
+
+  my %index1   = (path => ..., qname => .., type => ...);
+  my @indexes  = (\%index1, \%index2, \%index3);
+  my %fulltext = (default => 'none', attributes => 0, alphanum => 0);
+  my %trigger1 = (parameter => [ {name => 'p1', value => '42'} ];
+  my @triggers = (\%trigger1, \%trigger2);
+
+  my %config   =
+    ( index      => {fulltext => \%fulltext, create => \@indexes}
+    , triggers   => {trigger  => \@triggers};
+    , validation => {mode     => 'yes'}
+    );
+
+  my ($rc, $success) = $db->configureCollection($name, \%config);
+
+=back
+
+$obj-E<gt>B<copyCollection>(FROM, TO | (TOCOLL, SUBCOLL))
+
+=over 4
+
+Copy the FROM collection to a new TO. With three arguments, SUBCOLL
+is a collection within TOCOLL.
+
+example: 
+
+  my ($rc, $succ) = $db->copyCollection('/db/from', '/db/some/to');
+  my ($rc, $succ) = $db->copyCollection('/db/from', '/db/some', 'to');
+
+=back
+
+$obj-E<gt>B<createCollection>(COLLECTION, [DATE])
+
+=over 4
+
+Is a success if the collection already exists or can be created.
+
+example: createCollection
+
+  my $subcoll = "$supercoll/$myname";
+  my ($rc, $success) = $db->createCollection($subcoll);
+  $rc==0 or die "$rc $success";
+
+=back
+
+$obj-E<gt>B<describeCollection>([COLLECTION], OPTIONS)
+
+=over 4
+
+Returns the RC and a HASH with details.  The details are the same as
+returned with XML::eXistDB::RPC subroutine getCollectionDescr, excluding details about
+documents.
+
+ Option   --Default
+ documents  <false>
+
+. documents => BOOLEAN
+
+example: 
+
+  my ($rc, $descr) = $db->describeCollection($coll, documents => 1);
+  $rc and die $rc;
+  print Dumper $descr;  # Data::Dumper::Dumper
+
+=back
+
+$obj-E<gt>B<listResources>([COLLECTION])
+
+=over 4
+
+[non-API] Returns ... with all documents in the COLLECTION. Without
+COLLECTION, it will list all documents in the whole repository.
+
+example: 
+
+  my ($rc, @elems) = $db->listResources;
+  $rc==0 or die "error: $elems[0] ($rc)";
+
+=back
+
+$obj-E<gt>B<moveCollection>(FROM, TO | (TOCOLL, SUBCOLL))
+
+=over 4
+
+Copy the FROM collection to a new TO. With three arguments, SUBCOLL
+is a collection within TOCOLL.
+
+example: 
+
+  my ($rc, $succ) = $db->moveCollection('/db/from', '/db/some/to');
+  my ($rc, $succ) = $db->moveCollection('/db/from', '/db/some', 'to');
+
+=back
+
+$obj-E<gt>B<reindexCollection>(COLLECTION)
+
+=over 4
+
+Reindex all documents in a certain collection.
+
+example: 
+
+   my ($rc, $success) = $db->reindexCollection($name);
+   die "error: $success ($rc)" if $rc;
+   die "failed" unless $success;
+
+=back
+
+$obj-E<gt>B<removeCollection>(COLLECTION)
+
+=over 4
+
+Remove an entire collection from the database.
+
+example: 
+
+   my ($rc, $success) = $db->removeCollection($name);
+   die "error: $rc $success" if $rc;
+   die "failed" unless $success;
+
+=back
+
+$obj-E<gt>B<subCollections>([COLLECTION])
+
+=over 4
+
+[non-API] Returns a list of sub-collections for this collection, based
+on the results of L<describeCollection()|XML::eXistDB::RPC/"Collections">. The returned names are made
+absolute.
+
+example: 
+
+  my ($rc, @subs) = $db->subCollections($coll);
+  $rc and die "$rc $subs[0]";
+  print "@subs\n";
+
+=back
+
+=head2 Permissions
+
+$obj-E<gt>B<describeCollectionPermissions>([COLLECTION])
+
+=over 4
+
+Returns the RC and a HASH which shows the permissions on the COLLECTION.
+The output of the API is regorously rewritten to simplify implementation.
+
+The HASH contains absolute collection names as keys, and then as values
+a HASH with C<user>, C<group> and C<mode>.
+
+=back
+
+$obj-E<gt>B<describeResourcePermissions>(RESOURCE)
+
+=over 4
+
+[non-API] returns HASH with permission details about a RESOURCE>
+
+=back
+
+$obj-E<gt>B<describeUser>(USERNAME)
+
+=over 4
+
+[non-API] returns a HASH with user information.
+
+example: 
+
+  my ($rc, $user) = $db->describeUser('guest');
+  $rc==0 or die "error: $user ($rc)";
+  my @groups = @{$user->{groups}};
+
+=back
+
+$obj-E<gt>B<listDocumentPermissions>([COLLECTION])
+
+=over 4
+
+List the permissions for all resources in the COLLECTION
+
+=back
+
+$obj-E<gt>B<listGroups>
+
+=over 4
+
+[non-API] list all defined groups.
+Returns a vector.
+
+example: 
+
+  my ($rc, @groups) = $db->listGroups;
+  $rc==0 or die "$groups[0] ($rc)";
+
+=back
+
+$obj-E<gt>B<listUsers>
+
+=over 4
+
+[non-API] Returns a LIST with all defined usernames.
+
+example: 
+
+  my ($rc, @users) = $db->listUsers;
+  $rc==0 or die "error $users[0] ($rc)";
+
+=back
+
+$obj-E<gt>B<login>(USERNAME, [PASSWORD])
+
+=over 4
+
+[non-API] Change the USERNAME (as known by ExistDB). When you specify
+a non-existing USERNAME or a wrong PASSWORD, you will not get more data
+from this connection.  The next request will tell.
+
+=back
+
+$obj-E<gt>B<removeUser>(USERNAME)
+
+=over 4
+
+Returns true on success.
+
+=back
+
+$obj-E<gt>B<setPermissions>(TARGET, PERMISSIONS, [USER, GROUP])
+
+=over 4
+
+The TARGET which is addressed is either a resource or a collection.
+
+The PERMISSIONS are specified either as an integer value or using a
+modification string. The bit encoding of the integer value corresponds
+to Unix conventions (with 'x' is replaced by 'update'). The modification
+string has as syntax:
+  [user|group|other]=[+|-][read|write|update][, ...]
+
+=back
+
+$obj-E<gt>B<setUser>(USER, PASSWORD, GROUPS, [HOME])
+
+=over 4
+
+Modifies or creates a repository user.
+The PASSWORD is plain-text password. GROUPS are specified as single
+scalar or and ARRAY. The first group is the user's primary group.
+
+=back
+
+=head2 Resources
+
+$obj-E<gt>B<copyResource>(FROM, TOCOLL, TONAME)
+
+=over 4
+
+example: 
+
+  my ($rc, $success) = $db->copyResource(...);
+
+=back
+
+$obj-E<gt>B<countResources>([COLLECTION])
+
+=over 4
+
+[non-API] Returns the number of resources in the COLLECTION.
+
+example: 
+
+  my ($rc, $count) = $db->countResources($collection);
+
+=back
+
+$obj-E<gt>B<describeResource>(RESOURCE)
+
+=over 4
+
+Returns details about a RESOURCE (which is a document or a binary).
+
+example: 
+
+  my ($rc, $details) = $db->describeResource($resource);
+
+=back
+
+$obj-E<gt>B<lockResource>(RESOURCE, [USERNAME])
+
+=over 4
+
+=back
+
+$obj-E<gt>B<moveResource>(FROM, TOCOLL, TONAME)
+
+=over 4
+
+example: 
+
+  my ($rc, $success) = $db->moveResource(...);
+
+=back
+
+$obj-E<gt>B<removeResource>(DOCNAME)
+
+=over 4
+
+[non-API] remove a DOCument from the repository by NAME.  This method's name
+is more consistent than the official API name XML::eXistDB::RPC subroutine remove.
+
+=back
+
+$obj-E<gt>B<typeOfResource>(RESOURCE)
+
+=over 4
+
+[non-API] Returns a HASH with details about the RESOURCE.
+
+=back
+
+$obj-E<gt>B<uniqueResourceName>([COLLECTION])
+
+=over 4
+
+Produces a random (and hopefully unique) resource-id (string) within
+the COLLECTION.  The returned id looks something like C<fe7c6ea4.xml>.
+
+example: 
+
+  my ($rc, $id) = $db->uniqueResourceName($coll);
+
+=back
+
+$obj-E<gt>B<unlockResource>(RESOURCE)
+
+=over 4
+
+Returns its success.
+
+=back
+
+$obj-E<gt>B<whoLockedResource>(RESOURCE)
+
+=over 4
+
+[non-API] Returns a username.
+
+=back
+
+=head3 Download documents
+
+$obj-E<gt>B<downloadDocument>(RESOURCE, FORMAT)
+
+=over 4
+
+Returns a document as byte array.
+
+=back
+
+$obj-E<gt>B<listResourceTimestamps>(RESOURCE)
+
+=over 4
+
+[non-API] Returns the creation and modification dates.
+
+example: 
+
+   my ($rc, $created, $modified) = $db->listResourceTimestamps($resource);
+   $rc==0 or die "error: $created ($rc)";
+
+=back
+
+=head3 Upload documents
+
+$obj-E<gt>B<downloadBinary>(RESOURCE)
+
+=over 4
+
+[non-API] Get the bytes of a binary file from the server.
+
+example: 
+
+  my ($rc, $bytes) = $db->downloadBinary($resource);
+
+=back
+
+$obj-E<gt>B<uploadBinary>(RESOURCE, BYTES, MIME, REPLACE, [CREATED, MODIFIED])
+
+=over 4
+
+[non-API] The BYTES can be passed as string or better as string reference.
+
+example: 
+
+  my ($rc, $ok) = $db->storeBinaryResource($name, $bytes, 'text/html', 1);
+
+=back
+
+$obj-E<gt>B<uploadDocument>(RESOURCE, DOCUMENT, OPTIONS)
+
+=over 4
+
+[non-API] Hide all the different kinds of uploads via L<parse()|XML::eXistDB::RPC/"Please avoid: uploading documents"> or
+L<upload()|XML::eXistDB::RPC/"Please avoid: uploading documents"> behind one interface.
+
+It depends on the size of the document and the type of DATA provided,
+whether L<upload()|XML::eXistDB::RPC/"Please avoid: uploading documents">, uploadCompressed, or L<parse()|XML::eXistDB::RPC/"Please avoid: uploading documents"> is used to
+transmit the data to the server.
+
+ Option       --Default
+ beautify       <false>
+ chunk_size     <new(chunk_size)>
+ compress       <new(compress_upload)>
+ creation_date  <undef>
+ is_xml         <false>
+ mime_type      'text/xml'
+ modify_date    <undef>
+ replace        <false>
+
+. beautify => BOOLEAN
+
+. chunk_size => KILOBYTES
+
+. compress => KILOBYTES
+
+. creation_date => DATE
+
+. is_xml => BOOLEAN  # treatAsXML
+
+. mime_type => STRING
+
+. modify_date => DATE
+
+. replace => BOOLEAN
+
+=back
+
+=head2 Queries
+
+=head3 Compiled queries
+
+$obj-E<gt>B<compile>(QUERY, FORMAT)
+
+=over 4
+
+Returns a HASH.
+
+=back
+
+$obj-E<gt>B<describeCompile>(QUERY, FORMAT)
+
+=over 4
+
+[non-API] Returns a string which contains the diagnostics of compiling
+the query.
+
+=back
+
+$obj-E<gt>B<execute>(QUERYHANDLE, FORMAT)
+
+=over 4
+
+Returns a HASH.
+
+=back
+
+=head3 Query returns resultset
+
+$obj-E<gt>B<describeResultSet>(RESULTSET)
+
+=over 4
+
+[non-API] Retrieve a summary of the result set identified by it's
+result-set-id. This method returns a HASH with simple values
+C<queryTime> (milli-seconds) and C<hits> (number of results).
+Besides, it contains complex structures C<documents> and C<doctypes>.
+
+=back
+
+$obj-E<gt>B<executeQuery>(QUERY, [ENCODING], [FORMAT])
+
+=over 4
+
+example: 
+
+   my $resultid = $db->executeQuery($query);
+   $db->releaseResults($resultid);
+
+=back
+
+$obj-E<gt>B<numberOfResults>(RESULTSET)
+
+=over 4
+
+[non-API] Returns the number of answers in the RESULT set of a query.
+Replaces XML::eXistDB::RPC subroutine getHits.
+
+=back
+
+$obj-E<gt>B<releaseResultSet>(RESULTSET, [PARAMS])
+
+=over 4
+
+[non-API] Give-up on the RESULTSET on the server.
+
+=back
+
+$obj-E<gt>B<retrieveResult>(RESULTSET, POS, [FORMAT])
+
+=over 4
+
+[non-API] retrieve a single result from the RESULT-SET.
+Replaces L<retrieve()|XML::eXistDB::RPC/"Please avoid: collect query results"> and L<retrieveFirstChunk()|XML::eXistDB::RPC/"Please avoid: simple node queries">.
+
+=back
+
+$obj-E<gt>B<retrieveResults>(RESULTSET, [FORMAT])
+
+=over 4
+
+Replaces L<retrieveAll()|XML::eXistDB::RPC/"Please avoid: collect query results"> and L<retrieveAllFirstChunk()|XML::eXistDB::RPC/"Please avoid: collect query results">.
+
+=back
+
+=head3 Single return query
+
+$obj-E<gt>B<query>(QUERY, LIMIT, [FIRST], [FORMAT])
+
+=over 4
+
+[deprecated according to the java description] Returns a document of the
+collected results.
+
+=back
+
+=head3 Simple node queries
+
+$obj-E<gt>B<retrieveDocumentNode>(DOCUMENT, NODEID, [FORMAT])
+
+=over 4
+
+[non-API] Collect one node from a certain document. Doesn't matter
+how large: this method will always work (by always using chunks).
+
+=back
+
+=head3 Modify document content
+
+$obj-E<gt>B<updateCollection>(COLLECTION, XUPDATE)
+
+=over 4
+
+[non-API]
+
+example: 
+
+  my ($rc, $some_int) = $db->updateCollection($coll, $xupdate);
+
+=back
+
+$obj-E<gt>B<updateResource>(RESOURCE, XUPDATE, [ENCODING])
+
+=over 4
+
+example: 
+
+  my ($rc, $some_int) = $db->updateResource($resource, $xupdate);
+
+=back
+
+=head2 Indexing
+
+$obj-E<gt>B<getIndexedElements>(COLLECTION, RECURSIVE)
+
+=over 4
+
+=back
+
+$obj-E<gt>B<scanIndexTerms>(COLLECTION, BEGIN, END, RECURSIVE)
+
+=over 4
+
+or C<< $db->scanIndexTerms(XPATH, BEGIN, END) >>.
+
+example: 
+
+  my ($rc, $details) = $db->scanIndexTerms($xpath, $begin, $end);
+  my ($rc, $details) = $db->scanIndexTerms($coll, $begin, $end, $recurse);
+
+=back
+
+=head2 Helpers
+
+=head2 Please avoid
+
+Some standard API methods have gotten more powerful alternatives.  Please
+avoid using the methods described in this section (although they do work)
+
+#-----------------
+
+=head3 Please avoid: collections
+
+$obj-E<gt>B<getCollectionDesc>([COLLECTION])
+
+=over 4
+
+Please use describeCollection() with option C<< documents = 0 >>.
+
+=back
+
+=head3 Please avoid: download documents
+
+$obj-E<gt>B<getDocument>(RESOURCE, FORMAT|(ENCODING, PRETTY, STYLE))
+
+=over 4
+
+Please use L<downloadDocument()|XML::eXistDB::RPC/"Download documents">.  Either specify FORMAT parameters
+(a list of pairs), or three arguments.  In the latter case, the
+STYLE must be present but may be C<undef>.
+
+=back
+
+$obj-E<gt>B<getDocumentAsString>(RESOURCE, FORMAT|(ENCODING, PRETTY, STYLE))
+
+=over 4
+
+Please use L<downloadDocument()|XML::eXistDB::RPC/"Download documents">. See L<getDocument()|XML::eXistDB::RPC/"Please avoid: download documents">.
+
+=back
+
+$obj-E<gt>B<getDocumentData>(RESOURCE, FORMAT)
+
+=over 4
+
+Please use L<downloadDocument()|XML::eXistDB::RPC/"Download documents">.
+Retrieve the specified document, but limit the number of bytes
+transmitted to avoid memory shortage on the server. The size of the
+chunks is controled by the server.  Returned is a HASH.
+
+When the returned HASH contains C<supports-long-offset>, then get the
+next Chunk with L<getNextExtendedChunk()|XML::eXistDB::RPC/"Please avoid: download documents"> otherwise use L<getNextChunk()|XML::eXistDB::RPC/"Please avoid: download documents">.
+
+example: 
+
+   my ($rc, $chunk) = $db->getDocumentData($resource);
+   my $doc = $chunk->{data};
+   while($rc==0 && $chunk->{offset}!=0)
+   {   ($rc, $chunk) = $chunk->{'supports-long-offset'}
+       ? $db->getNextExtendedChunk($chunk->{handle}, $chunk->{offset})
+       : $db->getNextChunk($chunk->{handle}, $chunk->{offset});
+       $rc==0 and $doc .= $chunk->{data};
+   }
+   $rc==0 or die "error: $chunk ($rc)";
+
+=back
+
+$obj-E<gt>B<getNextChunk>(TMPNAME, OFFSET)
+
+=over 4
+
+Collect the next chunk, initiated with a L<getDocumentData()|XML::eXistDB::RPC/"Please avoid: download documents">. The file
+is limited to 2GB.
+
+=back
+
+$obj-E<gt>B<getNextExtendedChunk>(TMPNAME, OFFSET)
+
+=over 4
+
+Collect the next chunk, initiated with a L<getDocumentData()|XML::eXistDB::RPC/"Please avoid: download documents">. This method
+can only be used with servers which run an eXist which supports long files.
+
+=back
+
+=head3 Please avoid: uploading documents
+
+$obj-E<gt>B<parse>(DOCUMENT, RESOURCE, [REPLACE, [CREATED, MODIFIED]])
+
+=over 4
+
+Please use L<uploadDocument()|XML::eXistDB::RPC/"Upload documents">.
+Store the DOCUMENT of a document under the RESOURCE name into the
+repository. When REPLACE is true, it will overwrite an existing document
+when it exists.
+
+The DATA can be a string containing XML or XML::LibXML::Document.
+
+=back
+
+$obj-E<gt>B<parseLocal>(TEMPNAME, RESOURCE, REPLACE, MIME, [CREATED, MODIFIED])
+
+=over 4
+
+Please use L<uploadDocument()|XML::eXistDB::RPC/"Upload documents">.
+Put the content of document which was just oploaded to the server under some
+TEMPNAME (received from L<upload()|XML::eXistDB::RPC/"Please avoid: uploading documents">), as RESOURCE in the database.
+
+NB: B<Local> means "server local", which is remote for us as clients.
+
+=back
+
+$obj-E<gt>B<parseLocalExt>(TEMPNAME, RESOURCE, REPLACE, MIME, ISXML, [CREATED, MODIFIED])
+
+=over 4
+
+Please use L<uploadDocument()|XML::eXistDB::RPC/"Upload documents">.
+Put the content of document which was just oploaded with L<upload()|XML::eXistDB::RPC/"Please avoid: uploading documents"> to
+the server under some TEMPNAME (received from L<upload()|XML::eXistDB::RPC/"Please avoid: uploading documents">) as RESOURCE
+in the database. Like L<parseLocal()|XML::eXistDB::RPC/"Please avoid: uploading documents">, but with extra C<ISXML> boolean,
+to indicate that the object is XML, where the server does not know that
+from the mime-type.
+
+NB: B<Local> means "server local", which is remote for us as clients.
+
+=back
+
+$obj-E<gt>B<storeBinary>(BYTES, RESOURCE, MIME, REPLACE, [CREATED, MODIFIED])
+
+=over 4
+
+Please use L<uploadBinary()|XML::eXistDB::RPC/"Upload documents">.
+
+=back
+
+$obj-E<gt>B<upload>([TEMPNAME], CHUNK)
+
+=over 4
+
+Please use L<uploadDocument()|XML::eXistDB::RPC/"Upload documents">.
+Upload a document in parts to the server. The first upload will give
+you the TEMPoraryNAME for the object. You may leave that name out or
+explicitly state C<undef> at that first call.  When all data is uploaded,
+call L<parseLocal()|XML::eXistDB::RPC/"Please avoid: uploading documents"> or L<parseLocalExt()|XML::eXistDB::RPC/"Please avoid: uploading documents">.
+
+example: 
+
+   my ($rc1, $tmp)  = $db->upload(undef, substr($data, 0, 999));
+   my ($rc2, undef) = $db->upload($tmp,  substr($data, 1000));
+   my ($rc3, $ok)   = $db->parseLocal($tmp, '/db/file.xml', 0, 'text/xml')
+      if $rc1==0 && $rc2==0;
+
+=back
+
+$obj-E<gt>B<uploadCompressed>([TEMPNAME], CHUNK)
+
+=over 4
+
+Please use L<uploadDocument()|XML::eXistDB::RPC/"Upload documents">.
+Like L<upload()|XML::eXistDB::RPC/"Please avoid: uploading documents">, although the chunks are part of a compressed file.
+
+=back
+
+=head3 Please avoid: simple node queries
+
+$obj-E<gt>B<retrieveFirstChunk>((DOCUMENT, NODEID)|(RESULTSET, POS), [FORMAT])
+
+=over 4
+
+Please use L<retrieveDocumentNode()|XML::eXistDB::RPC/"Simple node queries"> or L<retrieveResult()|XML::eXistDB::RPC/"Query returns resultset">.
+Two very different uses for this method: either retrieve the first part
+of a single node from a document, or retrieve the first part of an
+answer in a result set.  See L<getNextChunk()|XML::eXistDB::RPC/"Please avoid: download documents"> for the next chunks.
+
+=back
+
+=head3 Please avoid: collect query results
+
+$obj-E<gt>B<retrieve>((DOCUMENT, NODEID)|(RESULTSET, POS), [FORMAT])
+
+=over 4
+
+Please use L<retrieveResult()|XML::eXistDB::RPC/"Query returns resultset"> or L<retrieveDocumentNode()|XML::eXistDB::RPC/"Simple node queries">.
+
+=back
+
+$obj-E<gt>B<retrieveAll>(RESULTSET, [FORMAT])
+
+=over 4
+
+Please use L<retrieveResults()|XML::eXistDB::RPC/"Query returns resultset">.
+
+=back
+
+$obj-E<gt>B<retrieveAllFirstChunk>(RESULTSET, [FORMAT])
+
+=over 4
+
+Please use L<retrieveResults()|XML::eXistDB::RPC/"Query returns resultset">.
+
+=back
+
+=head2 Renamed methods
+
+Quite a number of API methods have been renamed to be more consistent
+with other names.  Using the new names should improve readibility.
+
+  createResourceId          => uniqueResourceName
+  getBinaryResource         => downloadBinary
+  getCreationDate           => collectionCreationDate
+  getDocType                => typeOfResource
+  getDocumentListing        => listResources
+  getGroups                 => listGroups
+  getHits                   => numberOfResults
+  getPermissions            => describeResourcePermissions
+  getResourceCount          => countResources
+  getTimestamps             => listResourceTimestamps
+  getUser                   => describeUser
+  getUsers                  => listUsers
+  hasUserLock               => whoLockedResource
+  listCollectionPermissions => describeCollectionPermissions
+  printDiagnostics          => describeCompile
+  querySummary              => describeResultSet
+  releaseQueryResult        => releaseResultSet
+  remove                    => removeResource
+  xupdate                   => xupdateCollection
+  xupdateResource           => xupdateResource
+
+=head2 Methods with unknown purpose
+
+For all the next methods, it is unclear what they do, or some it their
+required parameters behave. Please help me documenting them, and I will
+implement (and probably rename) them.
+
+ boolean  isValid NAME
+ boolean  dataBackup DESTINATION
+ List     getDocumentChunk(String name, HashMap parameters)
+ byte[]   getDocumentChunk(String name, int start, int stop)
+ boolean  setDocType(String documentName, String doctypename
+   , String publicid, String systemid)
+ HashMap  queryP(byte[] xpath, HashMap parameters)
+ HashMap  queryP(byte[] xpath, String docName, String s_id
+   , HashMap parameters)
+ retrieveAsString(String doc, String id, HashMap parameters)
+
+=head1 SEE ALSO
+
+This module is part of XML-ExistDB distribution version 0.09,
+built on November 25, 2009. Website: F<http://perl.overmeer.net/xml-compile/>
+
+All modules in this suite:
+L<XML::Compile>,
+L<XML::Compile::SOAP>,
+L<XML::Compile::SOAP12>,
+L<XML::Compile::SOAP::Daemon>,
+L<XML::Compile::Tester>,
+L<XML::Compile::Cache>,
+L<XML::Compile::Dumper>,
+L<XML::Compile::RPC>,
+and
+L<XML::Rewrite>,
+L<XML::ExistDB>,
+L<XML::LibXML::Simple>.
+
+Please post questions or ideas to the mailinglist at
+F<http://lists.scsys.co.uk/cgi-bin/mailman/listinfo/xml-compile>
+For life contact with other developers, visit the C<#xml-compile> channel
+on C<irc.perl.org>.
+
+=head1 LICENSE
+
+Copyrights 2009 by Mark Overmeer. For other contributors see ChangeLog.
+
+This program is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself.
+See F<http://www.perl.com/perl/misc/Artistic.html>
+

@@ -1,0 +1,414 @@
+=head1 NAME
+
+XML::eXistDB - handle the eXist pure XML database
+
+=head1 INHERITANCE
+
+ XML::eXistDB
+   is a XML::Compile::Cache
+   is a XML::Compile::Schema
+   is a XML::Compile
+
+=head1 SYNOPSIS
+
+ # You want to talk to eXist via a protocol. Read that manpage
+ use XML::eXistDB::RPC;
+ my $db = XML::eXistDB::RPC->new(...);
+
+=head1 DESCRIPTION
+
+There are many database which support XML and Xquery. Quite a number of
+them translate XML into tables and Xquery into SQL statements. The eXist
+database however, is a pure XML/Xquery database.
+Website: F<http://exist-db.org>
+
+The C<XML::eXistDB> distribution contains the following modules:
+
+=over 4
+
+=item C<XML::eXistDB> focuses on processing eXist (configuration) files
+
+=item C<XML::eXistDB::Util> contains convenience functions and constants
+
+=item C<XML::eXistDB::RPC> implements the large XML-RPC API to speak to
+
+  an eXist daemon
+
+=back
+
+The "REST" API for eXist is very different from the XML-RPC API, so there
+is no chance on a common base-class. The XML-RPC API is probably quite close
+to the XML:DB standard, but for the moment, no attempts are made to unify
+the implementation to facilitate different XML databases back-ends.
+
+=head1 METHODS
+
+=head2 Constructors
+
+XML::eXistDB-E<gt>B<new>(OPTIONS)
+
+=over 4
+
+ Option            --Defined in     --Default
+ allow_undeclared    XML::Compile::Cache  <true>
+ any_element         XML::Compile::Cache  'SKIP_ALL'
+ block_namespace     XML::Compile::Schema  []
+ hook                XML::Compile::Schema  undef
+ hooks               XML::Compile::Schema  []
+ ignore_unused_tags  XML::Compile::Schema  <false>
+ key_rewrite         XML::Compile::Schema  []
+ opts_readers                         <sloppy ints and floats>
+ opts_rw             XML::Compile::Cache  []
+ opts_writers        XML::Compile::Cache  []
+ prefixes            XML::Compile::Cache  <smart>
+ schema_dirs         XML::Compile     undef
+ typemap             XML::Compile::Schema  {}
+
+. allow_undeclared => BOOLEAN
+
+. any_element => CODE|'TAKE_ALL'|'SKIP_ALL'|'ATTEMPT'|'SLOPPY'
+
+. block_namespace => NAMESPACE|TYPE|HASH|CODE|ARRAY
+
+. hook => ARRAY-WITH-HOOKDATA | HOOK
+
+. hooks => ARRAY-OF-HOOK
+
+. ignore_unused_tags => BOOLEAN|REGEXP
+
+. key_rewrite => HASH|CODE|ARRAY-of-HASH-and-CODE
+
+. opts_readers => []
+
+. opts_rw => HASH|ARRAY-of-PAIRS
+
+. opts_writers => HASH|ARRAY-of-PAIRS
+
+. prefixes => HASH|ARRAY-of-PAIRS
+
+. schema_dirs => DIRECTORY|ARRAY-OF-DIRECTORIES
+
+. typemap => HASH
+
+=back
+
+=head2 Accessors
+
+$obj-E<gt>B<addHook>(HOOKDATA|HOOK|undef)
+
+=over 4
+
+See L<XML::Compile::Schema/"Accessors">
+
+=back
+
+$obj-E<gt>B<addHooks>(HOOK, [HOOK, ...])
+
+=over 4
+
+See L<XML::Compile::Schema/"Accessors">
+
+=back
+
+$obj-E<gt>B<addKeyRewrite>(PREDEF|CODE|HASH, ...)
+
+=over 4
+
+See L<XML::Compile::Schema/"Accessors">
+
+=back
+
+$obj-E<gt>B<addSchemaDirs>(DIRECTORIES|FILENAME)
+
+XML::eXistDB-E<gt>B<addSchemaDirs>(DIRECTORIES|FILENAME)
+
+=over 4
+
+See L<XML::Compile/"Accessors">
+
+=back
+
+$obj-E<gt>B<addSchemas>(XML, OPTIONS)
+
+=over 4
+
+See L<XML::Compile::Schema/"Accessors">
+
+=back
+
+$obj-E<gt>B<addTypemap>(PAIR)
+
+=over 4
+
+See L<XML::Compile::Schema/"Accessors">
+
+=back
+
+$obj-E<gt>B<addTypemaps>(PAIRS)
+
+=over 4
+
+See L<XML::Compile::Schema/"Accessors">
+
+=back
+
+$obj-E<gt>B<allowUndeclared>([BOOLEAN])
+
+=over 4
+
+See L<XML::Compile::Cache/"Accessors">
+
+=back
+
+$obj-E<gt>B<blockNamespace>(NAMESPACE|TYPE|HASH|CODE|ARRAY)
+
+=over 4
+
+See L<XML::Compile::Schema/"Accessors">
+
+=back
+
+$obj-E<gt>B<hooks>
+
+=over 4
+
+See L<XML::Compile::Schema/"Accessors">
+
+=back
+
+$obj-E<gt>B<prefix>(PREFIX)
+
+=over 4
+
+See L<XML::Compile::Cache/"Accessors">
+
+=back
+
+$obj-E<gt>B<prefixFor>(URI)
+
+=over 4
+
+See L<XML::Compile::Cache/"Accessors">
+
+=back
+
+$obj-E<gt>B<prefixed>(TYPE)
+
+=over 4
+
+See L<XML::Compile::Cache/"Accessors">
+
+=back
+
+$obj-E<gt>B<prefixes>([PAIRS|ARRAY|HASH])
+
+=over 4
+
+See L<XML::Compile::Cache/"Accessors">
+
+=back
+
+$obj-E<gt>B<useSchema>(SCHEMA, [SCHEMA])
+
+=over 4
+
+See L<XML::Compile::Schema/"Accessors">
+
+=back
+
+=head2 Compilers
+
+$obj-E<gt>B<compile>(('READER'|'WRITER'), TYPE, OPTIONS)
+
+=over 4
+
+See L<XML::Compile::Schema/"Compilers">
+
+=back
+
+$obj-E<gt>B<compileAll>(['READER'|'WRITER'|'RW', [NAMESPACE]])
+
+=over 4
+
+See L<XML::Compile::Cache/"Compilers">
+
+=back
+
+XML::eXistDB-E<gt>B<dataToXML>(NODE|REF-XML-STRING|XML-STRING|FILENAME|FILEHANDLE|KNOWN)
+
+=over 4
+
+See L<XML::Compile/"Compilers">
+
+=back
+
+$obj-E<gt>B<reader>(TYPE|NAME, OPTIONS)
+
+=over 4
+
+See L<XML::Compile::Cache/"Compilers">
+
+=back
+
+$obj-E<gt>B<template>('XML'|'PERL', TYPE, OPTIONS)
+
+=over 4
+
+See L<XML::Compile::Schema/"Compilers">
+
+=back
+
+$obj-E<gt>B<writer>(TYPE|NAME)
+
+=over 4
+
+See L<XML::Compile::Cache/"Compilers">
+
+=back
+
+=head2 Administration
+
+$obj-E<gt>B<declare>('READER'|'WRITER'|'RW', TYPE|ARRAY-of-TYPES, OPTIONS)
+
+=over 4
+
+See L<XML::Compile::Cache/"Administration">
+
+=back
+
+$obj-E<gt>B<elements>
+
+=over 4
+
+See L<XML::Compile::Schema/"Administration">
+
+=back
+
+$obj-E<gt>B<findName>(NAME)
+
+=over 4
+
+See L<XML::Compile::Cache/"Administration">
+
+=back
+
+$obj-E<gt>B<findSchemaFile>(FILENAME)
+
+XML::eXistDB-E<gt>B<findSchemaFile>(FILENAME)
+
+=over 4
+
+See L<XML::Compile/"Administration">
+
+=back
+
+$obj-E<gt>B<importDefinitions>(XMLDATA, OPTIONS)
+
+=over 4
+
+See L<XML::Compile::Schema/"Administration">
+
+=back
+
+$obj-E<gt>B<knownNamespace>(NAMESPACE|PAIRS)
+
+XML::eXistDB-E<gt>B<knownNamespace>(NAMESPACE|PAIRS)
+
+=over 4
+
+See L<XML::Compile/"Administration">
+
+=back
+
+$obj-E<gt>B<namespaces>
+
+=over 4
+
+See L<XML::Compile::Schema/"Administration">
+
+=back
+
+$obj-E<gt>B<printIndex>([FILEHANDLE], OPTIONS)
+
+=over 4
+
+See L<XML::Compile::Cache/"Administration">
+
+=back
+
+$obj-E<gt>B<types>
+
+=over 4
+
+See L<XML::Compile::Schema/"Administration">
+
+=back
+
+$obj-E<gt>B<walkTree>(NODE, CODE)
+
+=over 4
+
+See L<XML::Compile/"Administration">
+
+=back
+
+=head2 Collection configuration (.xconf)
+
+$obj-E<gt>B<createCollectionConfig>(DATA, OPTIONS)
+
+=over 4
+
+The DATA structure should provide the needs for an collection configuration
+file, in the shape C<XML::Compile> expects based on the schema. See the
+C<template/collection.xconf>, which is part of the distribution.
+
+ Option  --Default
+ beautify  <true>
+
+. beautify => BOOLEAN
+
+=back
+
+$obj-E<gt>B<decodeXML>(STRING)
+
+=over 4
+
+Received is a STRING produced by the server. Decode it, into the most
+useful Perl data structure.
+
+=back
+
+=head1 DETAILS
+
+=head1 SEE ALSO
+
+This module is part of XML-ExistDB distribution version 0.09,
+built on November 25, 2009. Website: F<http://perl.overmeer.net/xml-compile/>
+
+All modules in this suite:
+L<XML::Compile>,
+L<XML::Compile::SOAP>,
+L<XML::Compile::SOAP12>,
+L<XML::Compile::SOAP::Daemon>,
+L<XML::Compile::Tester>,
+L<XML::Compile::Cache>,
+L<XML::Compile::Dumper>,
+L<XML::Compile::RPC>,
+and
+L<XML::Rewrite>,
+L<XML::ExistDB>,
+L<XML::LibXML::Simple>.
+
+Please post questions or ideas to the mailinglist at
+F<http://lists.scsys.co.uk/cgi-bin/mailman/listinfo/xml-compile>
+For life contact with other developers, visit the C<#xml-compile> channel
+on C<irc.perl.org>.
+
+=head1 LICENSE
+
+Copyrights 2009 by Mark Overmeer. For other contributors see ChangeLog.
+
+This program is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself.
+See F<http://www.perl.com/perl/misc/Artistic.html>
+
