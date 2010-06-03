@@ -14,7 +14,7 @@ $Data::Dumper::Indent = 1;
 my $uri = $ENV{XML_EXIST_TESTDB}
     or plan skip_all => 'define XML_EXIST_TESTDB to run tests';
 
-plan tests => 30;
+plan tests => 31;
 
 my $db = XML::eXistDB::RPC->new(destination => $uri);
 isa_ok($db, 'XML::eXistDB::RPC', "rpc to $uri");
@@ -74,7 +74,14 @@ cmp_ok($ok, 'eq', 1);
 
 ($rc, $perms) = $db->describeCollectionPermissions($home);
 cmp_ok($rc, '==', 0, 'user markov home permissions');
+
+TODO: {
+
+local $TODO = "expect some info to be returned";
 warn Dumper $perms;
+ok(0);
+
+      }; # END TODO
 
 ($rc, $users) = $db->listUsers;
 cmp_ok($rc, '==', 0, 'list users');
@@ -84,8 +91,6 @@ is_deeply($users, \%expusers);
 $db->login(markov => 'testpw');
 ($rc, $users) = $db->listUsers;
 cmp_ok($rc, '==', 0, 'can we do anything with this permissions?');
-warn $users;
-warn $db->trace->{response}->as_string;
 
 $db->login(admin => 'xyz');
 

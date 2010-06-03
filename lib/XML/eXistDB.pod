@@ -1,6 +1,6 @@
 =head1 NAME
 
-XML::eXistDB - handle the eXist pure XML database
+ XML::eXistDB - handle the eXist pure XML database
 
 =head1 INHERITANCE
 
@@ -26,13 +26,11 @@ The C<XML::eXistDB> distribution contains the following modules:
 
 =over 4
 
-=item C<XML::eXistDB> focuses on processing eXist (configuration) files
+=item . C<XML::eXistDB> focuses on processing eXist (configuration) files
 
-=item C<XML::eXistDB::Util> contains convenience functions and constants
+=item . C<XML::eXistDB::Util> contains convenience functions and constants
 
-=item C<XML::eXistDB::RPC> implements the large XML-RPC API to speak to
-
-  an eXist daemon
+=item . C<XML::eXistDB::RPC> implements the large XML-RPC API to speak to an eXist daemon
 
 =back
 
@@ -250,7 +248,7 @@ See L<XML::Compile::Cache/"Compilers">
 
 =back
 
-$obj-E<gt>B<template>('XML'|'PERL', TYPE, OPTIONS)
+$obj-E<gt>B<template>('XML'|'PERL', ELEMENT, OPTIONS)
 
 =over 4
 
@@ -352,6 +350,8 @@ See L<XML::Compile/"Administration">
 
 =back
 
+=head2 Administration
+
 =head2 Collection configuration (.xconf)
 
 $obj-E<gt>B<createCollectionConfig>(DATA, OPTIONS)
@@ -382,8 +382,8 @@ useful Perl data structure.
 
 =head1 SEE ALSO
 
-This module is part of XML-ExistDB distribution version 0.09,
-built on November 25, 2009. Website: F<http://perl.overmeer.net/xml-compile/>
+This module is part of XML-ExistDB distribution version 0.11,
+built on June 03, 2010. Website: F<http://perl.overmeer.net/xml-compile/>
 
 All modules in this suite:
 L<XML::Compile>,
@@ -406,7 +406,7 @@ on C<irc.perl.org>.
 
 =head1 LICENSE
 
-Copyrights 2009 by Mark Overmeer. For other contributors see ChangeLog.
+Copyrights 2010 by Mark Overmeer. For other contributors see ChangeLog.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

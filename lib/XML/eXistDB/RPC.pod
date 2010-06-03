@@ -1,11 +1,21 @@
 =head1 NAME
 
-XML::eXistDB::RPC - Contact an ExistDB via RPC
+XML::eXistDB::RPC - access eXist databases via RPC
 
 =head1 DESCRIPTION
 
-Implementation of the full XML-RPC interface to the ExistDB. This is not
-just an one-on-one implementation, but some methods are smarter.
+This module is a full implementation of the fXML-RPC interface to the
+eXist Database. This is not just an one-on-one implementation: some
+methods are smarter and many methods are renamed to correct historical
+mistakes. Hopefully, the result is more readible.
+
+B<warning:> some methods are tested lightly, but a lot is B<not tested>
+in real-life. I have a long list of bugs for eXist 1.4, and hope that
+they will get fixed in a next release. Please do not be disappointed:
+contribute tests and fixes!
+
+B<warning:> be careful when upgrading to release until C<0.90>, because
+they may change method behavior and naming, See ChangeLog!
 
 =head2 Perl interface
 
@@ -30,12 +40,12 @@ and binaries are accepted, we speak about a I<Resource>.
 The XML-RPC method names are a mess: an typical example of many years
 of growth. To repair that, consistent naming convensions are introduced.
 
-Any C<describeXXX> collects a HASH with details about XXX. Any C<listXXX>
-collects a list of XXX names.  All Java typical C<get> method names
-were removed in favor of better named alternatives: sometimes C<list>,
-sometimes C<describe>, often something completely different. Class
-attribute getters and setters naming should not be used in interfaces
-(and very not-Perl).
+Any method C<describeXXX()> collects a HASH with details about C<XXX>.
+And any C<listXXX()> collects a list of C<XXX> names.  The typical Java
+C<get> prefixes on some methods were removed in favor of better named
+alternatives: sometimes C<list>, sometimes C<describe>, often something
+completely different. Class attribute getters and setters naming should
+not be used in interfaces (and are very not-Perl).
 
 Most methods already had the form "<action><class>" (like "removeCollection"),
 but on some random spots, the "class" was not present in the name.  This
@@ -44,22 +54,23 @@ methods to understand what they are doing.
 
 =head2 Return codes
 
-RPC is a network protocol. Just like operating calls: you shall always
-check the return status of each call!  Of course, this module could simply
-ignore the existence of fault conditions, to provide a much simpler
+RPC is a network protocol. Just like operating system calls: you shall
+always check the return status of each call! Of course, this module could
+simply ignore the existence of fault conditions, to provide a much simpler
 programmers interface. But keep in mind: handling error conditions is
 very important on the long run. A burdon for the first small programs,
 but a desperate need for maintainability.
 
-All method return a LIST, where the first scalar is a return code (RC).
-When that code is '0', all went well.  Otherwise, the code represent the
+All methods return a LIST, where the first scalar is a return code (RC).
+When that code is C<0>, all went well.  Otherwise, the code represent the
 transport error or the exception (refusal) as reported by the server
 logic.  In either case, the second scalar in the returned list contains
 the error message.  For instance,
 
-  my ($rc, $details) = $db->describeUser('guest');
+  my $user = guest;
+  my ($rc, $details) = $db->describeUser($user);
   $rc==0
-      or die "ERROR: cannot get user info for `guest': $details ($rc)\n";
+      or die "cannot get user info for `$user': $details ($rc)\n";
 
 =head1 METHODS
 
@@ -77,6 +88,7 @@ such object.
  chunk_size          32
  compress_upload     128
  destination         <undef>
+ format              []
  password            'guest'
  prettyprint_upload  <false>
  repository          '/db'
@@ -107,6 +119,14 @@ KILOBYTES in size. This will cost performance mainly on the client.
 =over 4
 
 Where the RPC server is (the ExistDB access point)
+
+=back
+
+. format => ARRAY|HASH
+
+=over 4
+
+The default for "options" which can be passed with many methods.
 
 =back
 
@@ -367,7 +387,7 @@ $obj-E<gt>B<describeCollection>([COLLECTION], OPTIONS)
 =over 4
 
 Returns the RC and a HASH with details.  The details are the same as
-returned with XML::eXistDB::RPC subroutine getCollectionDescr, excluding details about
+returned with L<getCollectionDesc()|XML::eXistDB::RPC/"Please avoid: collections">, excluding details about
 documents.
 
  Option   --Default
@@ -604,6 +624,19 @@ example:
 
 =back
 
+$obj-E<gt>B<getDocType>(DOCUMENT)
+
+=over 4
+
+Returns details about the DOCUMENT, the docname, public-id and system-id
+as list of three.
+
+example: 
+
+  my ($docname, $public, $system) = $db->getDocType($doc);
+
+=back
+
 $obj-E<gt>B<lockResource>(RESOURCE, [USERNAME])
 
 =over 4
@@ -625,15 +658,26 @@ $obj-E<gt>B<removeResource>(DOCNAME)
 =over 4
 
 [non-API] remove a DOCument from the repository by NAME.  This method's name
-is more consistent than the official API name XML::eXistDB::RPC subroutine remove.
+is more consistent than the official API name C<remove()>.
 
 =back
 
-$obj-E<gt>B<typeOfResource>(RESOURCE)
+$obj-E<gt>B<setDocType>(DOCUMENT, TYPENAME, PUBLIC_ID, SYSTEM_ID)
 
 =over 4
 
-[non-API] Returns a HASH with details about the RESOURCE.
+Add DOCTYPE information to a DOCUMENT.
+
+example: 
+
+  $rpc->setDocType($doc, "HTML"
+     , "-//W3C//DTD HTML 4.01 Transitional//EN"
+     , "http://www.w3.org/TR/html4/loose.dtd");
+
+Will add to the document
+
+  <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+   "http://www.w3.org/TR/html4/loose.dtd">
 
 =back
 
@@ -723,7 +767,7 @@ $obj-E<gt>B<uploadDocument>(RESOURCE, DOCUMENT, OPTIONS)
 L<upload()|XML::eXistDB::RPC/"Please avoid: uploading documents"> behind one interface.
 
 It depends on the size of the document and the type of DATA provided,
-whether L<upload()|XML::eXistDB::RPC/"Please avoid: uploading documents">, uploadCompressed, or L<parse()|XML::eXistDB::RPC/"Please avoid: uploading documents"> is used to
+whether L<upload()|XML::eXistDB::RPC/"Please avoid: uploading documents">, L<uploadCompressed()|XML::eXistDB::RPC/"Please avoid: uploading documents">, or L<parse()|XML::eXistDB::RPC/"Please avoid: uploading documents"> is used to
 transmit the data to the server.
 
  Option       --Default
@@ -783,7 +827,7 @@ Returns a HASH.
 
 =back
 
-=head3 Query returns resultset
+=head3 Query returns result as set
 
 $obj-E<gt>B<describeResultSet>(RESULTSET)
 
@@ -800,10 +844,15 @@ $obj-E<gt>B<executeQuery>(QUERY, [ENCODING], [FORMAT])
 
 =over 4
 
+Run the QUERY given in the specified ENCODING.  Returned is
+only an identifier to the result.
+
 example: 
 
-   my $resultid = $db->executeQuery($query);
-   $db->releaseResults($resultid);
+   my ($rc1, $set)   = $db->executeQuery($query);
+   my ($rc2, $count) = $db->numberOfResults($set);
+   my ($rc3, @data)  = $db->retrieveResults($set);
+   $db->releaseResults($set);
 
 =back
 
@@ -812,7 +861,7 @@ $obj-E<gt>B<numberOfResults>(RESULTSET)
 =over 4
 
 [non-API] Returns the number of answers in the RESULT set of a query.
-Replaces XML::eXistDB::RPC subroutine getHits.
+Replaces C<getHits()>.
 
 =back
 
@@ -841,14 +890,29 @@ Replaces L<retrieveAll()|XML::eXistDB::RPC/"Please avoid: collect query results"
 
 =back
 
-=head3 Single return query
+=head3 Query returns result
 
 $obj-E<gt>B<query>(QUERY, LIMIT, [FIRST], [FORMAT])
 
 =over 4
 
-[deprecated according to the java description] Returns a document of the
-collected results.
+Returns a document of the collected results.
+
+This method is deprecated according to the java description, in favor of
+L<executeQuery()|XML::eXistDB::RPC/"Query returns result as set">, however often used for its simplicity.
+
+=back
+
+$obj-E<gt>B<queryXPath>(XPATH, DOCNAME, NODE_ID, OPTIONS)
+
+=over 4
+
+When DOCUMENT is defined, then the search is limited to that document,
+optionally further restricted to the NODE with the indicated ID.
+
+example: 
+
+  my ($rc, $h) = $db->queryXPath($xpath, undef, undef);
 
 =back
 
@@ -915,15 +979,13 @@ example:
 Some standard API methods have gotten more powerful alternatives.  Please
 avoid using the methods described in this section (although they do work)
 
-#-----------------
-
 =head3 Please avoid: collections
 
 $obj-E<gt>B<getCollectionDesc>([COLLECTION])
 
 =over 4
 
-Please use describeCollection() with option C<< documents = 0 >>.
+Please use L<describeCollection()|XML::eXistDB::RPC/"Collections"> with option C<< documents => 0 >>.
 
 =back
 
@@ -935,7 +997,8 @@ $obj-E<gt>B<getDocument>(RESOURCE, FORMAT|(ENCODING, PRETTY, STYLE))
 
 Please use L<downloadDocument()|XML::eXistDB::RPC/"Download documents">.  Either specify FORMAT parameters
 (a list of pairs), or three arguments.  In the latter case, the
-STYLE must be present but may be C<undef>.
+STYLE must be present but may be C<undef>.  STYLE refers to a
+stylesheet document.
 
 =back
 
@@ -1075,7 +1138,7 @@ $obj-E<gt>B<retrieveFirstChunk>((DOCUMENT, NODEID)|(RESULTSET, POS), [FORMAT])
 
 =over 4
 
-Please use L<retrieveDocumentNode()|XML::eXistDB::RPC/"Simple node queries"> or L<retrieveResult()|XML::eXistDB::RPC/"Query returns resultset">.
+Please use L<retrieveDocumentNode()|XML::eXistDB::RPC/"Simple node queries"> or L<retrieveResult()|XML::eXistDB::RPC/"Query returns result as set">.
 Two very different uses for this method: either retrieve the first part
 of a single node from a document, or retrieve the first part of an
 answer in a result set.  See L<getNextChunk()|XML::eXistDB::RPC/"Please avoid: download documents"> for the next chunks.
@@ -1084,11 +1147,48 @@ answer in a result set.  See L<getNextChunk()|XML::eXistDB::RPC/"Please avoid: d
 
 =head3 Please avoid: collect query results
 
+$obj-E<gt>B<getDocumentChunked>(DOCNAME, OPTIONS)
+
+=over 4
+
+Please use L<downloadDocument()|XML::eXistDB::RPC/"Download documents">
+
+example: 
+
+   my ($rc, $handle, $total_length) = $db->getDocumentChuncked($doc);
+   my $xml = $db->getDocumentNextChunk($handle, 0, $total_length-1);
+
+=back
+
+$obj-E<gt>B<getDocumentNextChunk>(HANDLE, START, LENGTH)
+
+=over 4
+
+=back
+
+$obj-E<gt>B<initiateBackup>(DIRECTORY)
+
+=over 4
+
+Trigger the backup task to write to the DIRECTORY. Returns true, always,
+but that does not mean success: the initiation will succeed.
+
+=back
+
+$obj-E<gt>B<isValidDocument>(DOCUMENT)
+
+=over 4
+
+Returns true when the DOCUMENT (inside the database) is validated as
+correct.
+
+=back
+
 $obj-E<gt>B<retrieve>((DOCUMENT, NODEID)|(RESULTSET, POS), [FORMAT])
 
 =over 4
 
-Please use L<retrieveResult()|XML::eXistDB::RPC/"Query returns resultset"> or L<retrieveDocumentNode()|XML::eXistDB::RPC/"Simple node queries">.
+Please use L<retrieveResult()|XML::eXistDB::RPC/"Query returns result as set"> or L<retrieveDocumentNode()|XML::eXistDB::RPC/"Simple node queries">.
 
 =back
 
@@ -1096,7 +1196,7 @@ $obj-E<gt>B<retrieveAll>(RESULTSET, [FORMAT])
 
 =over 4
 
-Please use L<retrieveResults()|XML::eXistDB::RPC/"Query returns resultset">.
+Please use L<retrieveResults()|XML::eXistDB::RPC/"Query returns result as set">.
 
 =back
 
@@ -1104,19 +1204,27 @@ $obj-E<gt>B<retrieveAllFirstChunk>(RESULTSET, [FORMAT])
 
 =over 4
 
-Please use L<retrieveResults()|XML::eXistDB::RPC/"Query returns resultset">.
+Please use L<retrieveResults()|XML::eXistDB::RPC/"Query returns result as set">.
+
+=back
+
+$obj-E<gt>B<retrieveAsString>(DOCUMENT, NODEID, OPTIONS)
+
+=over 4
 
 =back
 
 =head2 Renamed methods
 
 Quite a number of API methods have been renamed to be more consistent
-with other names.  Using the new names should improve readibility.
+with other names.  Using the new names should improve readibility. The
+original names are still available:
 
+  -- xml-rpc name              -- replacement name
   createResourceId          => uniqueResourceName
+  dataBackup                => initiateBackup
   getBinaryResource         => downloadBinary
   getCreationDate           => collectionCreationDate
-  getDocType                => typeOfResource
   getDocumentListing        => listResources
   getGroups                 => listGroups
   getHits                   => numberOfResults
@@ -1126,35 +1234,20 @@ with other names.  Using the new names should improve readibility.
   getUser                   => describeUser
   getUsers                  => listUsers
   hasUserLock               => whoLockedResource
+  isValid                   => isValidDocument
   listCollectionPermissions => describeCollectionPermissions
   printDiagnostics          => describeCompile
+  queryP                    => queryXPath
   querySummary              => describeResultSet
   releaseQueryResult        => releaseResultSet
   remove                    => removeResource
   xupdate                   => xupdateCollection
   xupdateResource           => xupdateResource
 
-=head2 Methods with unknown purpose
-
-For all the next methods, it is unclear what they do, or some it their
-required parameters behave. Please help me documenting them, and I will
-implement (and probably rename) them.
-
- boolean  isValid NAME
- boolean  dataBackup DESTINATION
- List     getDocumentChunk(String name, HashMap parameters)
- byte[]   getDocumentChunk(String name, int start, int stop)
- boolean  setDocType(String documentName, String doctypename
-   , String publicid, String systemid)
- HashMap  queryP(byte[] xpath, HashMap parameters)
- HashMap  queryP(byte[] xpath, String docName, String s_id
-   , HashMap parameters)
- retrieveAsString(String doc, String id, HashMap parameters)
-
 =head1 SEE ALSO
 
-This module is part of XML-ExistDB distribution version 0.09,
-built on November 25, 2009. Website: F<http://perl.overmeer.net/xml-compile/>
+This module is part of XML-ExistDB distribution version 0.11,
+built on June 03, 2010. Website: F<http://perl.overmeer.net/xml-compile/>
 
 All modules in this suite:
 L<XML::Compile>,
@@ -1177,7 +1270,7 @@ on C<irc.perl.org>.
 
 =head1 LICENSE
 
-Copyrights 2009 by Mark Overmeer. For other contributors see ChangeLog.
+Copyrights 2010 by Mark Overmeer. For other contributors see ChangeLog.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

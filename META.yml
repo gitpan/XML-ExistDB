@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:                XML-ExistDB
-version:             0.09
+version:             0.11
 abstract:            ExistDB interface over XML-RPC
 license:             perl
 author:              
@@ -8,7 +8,7 @@ author:
 generated_by:        ExtUtils::MakeMaker version 6.42
 distribution_type:   module
 requires:     
-    Log::Report:                   0.25
+    Log::Report:                   0.26
     LWP::UserAgent:                0
     MIME::Base64:                  0
     Test::More:                    0.54

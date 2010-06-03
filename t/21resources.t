@@ -14,7 +14,7 @@ $Data::Dumper::Indent = 1;
 my $uri = $ENV{XML_EXIST_TESTDB}
     or plan skip_all => 'define XML_EXIST_TESTDB to run tests';
 
-plan tests => 42;
+plan tests => 48;
 
 my $db = XML::eXistDB::RPC->new(destination => $uri);
 isa_ok($db, 'XML::eXistDB::RPC', "rpc to $uri");
@@ -56,6 +56,16 @@ is($details->{group}, 'guest');
 ($rc, my @ts) = $db->listResourceTimestamps($doc1);
 cmp_ok($rc, '==', 0, "document timestamps");
 cmp_ok(scalar @ts, '==', 2);
+
+($rc, my $s) = $db->setDocType($doc1, 'name', 'pub', 'sys');
+cmp_ok($rc, '==', 0, "set doctype");
+cmp_ok($s, '==', 1);
+
+($rc, my $n, my $pub, my $sys) = $db->getDocType($doc1);
+cmp_ok($rc, '==', 0, "get doctype");
+is($n, 'name');
+is($pub, 'pub');
+is($sys, 'sys');
 
 ### add binary
 

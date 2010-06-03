@@ -1,4 +1,4 @@
-# Copyrights 2009 by Mark Overmeer.
+# Copyrights 2010 by Mark Overmeer.
 #  For other contributors see ChangeLog.
 # See the manual pages for details on the licensing terms.
 # Pod stripped from pm file by OODoc 1.06.
@@ -7,10 +7,10 @@ use strict;
 
 package XML::eXistDB::RPC;
 use vars '$VERSION';
-$VERSION = '0.09';
+$VERSION = '0.11';
 
 
-use Log::Report 'xml-existdb';
+use Log::Report 'xml-existdb', syntax => 'LONG';
 
 use XML::Compile::RPC::Util;
 use XML::Compile::RPC::Client ();
@@ -18,19 +18,15 @@ use XML::Compile::RPC::Client ();
 use XML::eXistDB::Util;
 use XML::eXistDB;
 
-use Digest::MD5  'md5_base64';
-use Encode       'encode';
-use MIME::Base64 'encode_base64';
+use Digest::MD5  qw/md5_base64 md5_hex/;
+use Encode       qw/encode/;
+use MIME::Base64 qw/encode_base64/;
 
 # to be removed later
 use Data::Dumper;
 $Data::Dumper::Indent = 1;
 
 my $dateTime = 'dateTime.iso8601';  # too high chance on typos
-
-### encountered problems with eXist 1.4RC1
-###   no two-params moveCollection()
-###   listCollectionPermission() fails with parameter
 
 
 sub new(@) { my $class = shift; (bless {}, $class)->init({@_}) }
@@ -47,14 +43,17 @@ sub init($)
     }
 
     $self->{repository}
-      = exists $args->{repository}         ? $args->{repository}        : '/db';
+      = exists $args->{repository} ? $args->{repository} : '/db';
     $self->{compr_up}
-      = defined $args->{compress_upload}   ? $args->{compress_upload}   : 128;
+      = defined $args->{compress_upload} ? $args->{compress_upload} : 128;
     $self->{chunks}  = defined $args->{chunk_size} ? $args->{chunk_size} : 32;
 
     $self->login($args->{user} || 'guest', $args->{password} || 'guest');
     $self->{pp_up}   = $args->{prettyprint_upload} ? 1 : 0;
     $self->{schemas} = $args->{schemas};
+
+    my $f = $args->{format} || [];
+    $self->{format}  = [ ref $f eq 'HASH' ? %$f : @$f ];
     $self;
 }
 
@@ -62,7 +61,8 @@ sub init($)
 
 # private method; "options" is an overloaded term, abused by eXist.
 sub _format(@)
-{   my %args = @_;
+{   my $self = shift;
+    my %args = (@{$self->{format}}, @_);
 
     if(my $sp = delete $args{'stylesheet-params'})
     {   while(my($k,$v) = each %$sp)
@@ -75,7 +75,7 @@ sub _format(@)
 sub _date_options($$)
 {   my ($created, $modified) = @_;
 
-      !($created || $modified) ? ()
+     !($created || $modified) ? ()
     : ($created && $modified) ? ($dateTime => $created, $dateTime => $modified)
     : report ERROR => "either both or neither creation and modification date";
 }
@@ -89,7 +89,7 @@ sub _document($)
         if ref $_[0] eq 'SCALAR';
     return encode 'utf-8', $_[0]
         if $_[0] =~ m/^\s*\</;
-    if($_[0] =~ m/[\r\n]/ && -f $_[0])
+    if($_[0] !~ m/[\r\n]/ && -f $_[0])
     {   local *DOC;
         open DOC, '<:raw', $_[0]
             or report FAULT => "cannot read document from file $_[0]";
@@ -335,11 +335,10 @@ sub setPermissions($$;$$)
 sub setUser($$$;$)
 {   my ($self, $user, $password, $groups, $home) = @_;
     my @groups = ref $groups eq 'ARRAY' ? @$groups : $groups;
-    my $digest_password = md5_base64 $password;
 
-# when digestPassword is used, then $passwd string still needed? Base64 digest?
-    $self->{rpc}->setUser(string => $user, string => $password
-       , string => $digest_password
+    $self->{rpc}->setUser(string => $user
+       , string => md5_base64($password)
+       , string => md5_hex("$user:exist:$password")
        , rpcarray_from(string => @groups)
        , ($home ? (string => $home) : ())
        );
@@ -402,10 +401,19 @@ sub moveResource($$$)
 }
 
 
-sub typeOfResource($)
+#T
+sub getDocType($)
 {   my ($rc, $details) = $_[0]->{rpc}->getDocType(string => $_[1]);
     $rc==0 or return ($rc, $details);
-    ($rc, struct_to_hash $details);
+    ($rc, rpcarray_values $details);
+}
+
+
+#T
+sub setDocType($$$$)
+{   my ($self, $doc, $name, $pub, $sys) = @_;
+    $self->{rpc}->setDocType(string => $doc
+      , string => $name, string => $pub, string => $sys);
 }
 
 
@@ -505,7 +513,8 @@ sub uploadBinary($$$$;$$)
 ### compile doesn't return anything
 sub compile($@)
 {   my ($self, $query) = (shift, shift);
-    my ($rc, $details) = $self->{rpc}->compile(base64 => $query, _format @_);
+    my ($rc, $details) = $self->{rpc}->compile(base64 => $query
+      , $self->_format(@_));
     $rc==0 or return ($rc, $details);
     (0, struct_to_hash $details);
 }
@@ -515,13 +524,14 @@ sub compile($@)
 # printDiagnostics should accept a base64
 sub describeCompile($@)
 {   my ($self, $query) = (shift, shift);
-    $self->{rpc}->printDiagnostics(string => $query, _format @_);
+    $self->{rpc}->printDiagnostics(string => $query, $self->_format(@_));
 }
 
 
 sub execute($@)
 {   my ($self, $handle) = (shift, shift);
-    my ($rc, $details) = $self->{rpc}->execute(string => $handle, _format @_);
+    my ($rc, $details)  = $self->{rpc}->execute(string => $handle
+      , $self->_format(@_));
     $rc==0 or return ($rc, $details);
     (0, struct_to_hash $details);
 }
@@ -530,9 +540,8 @@ sub execute($@)
 
 sub executeQuery($@)
 {   my ($self, $query) = @_;
-      @_ % 2
-    ? $self->{rpc}->executeQuery(base64 => $query, string => shift, _format @_)
-    : $self->{rpc}->executeQuery(base64 => $query, _format @_);
+    my @enc = @_ % 2 ? (string => shift) : ();
+    $self->{rpc}->executeQuery(base64 => $query, @enc, $self->_format(@_));
 }
 
 
@@ -543,8 +552,6 @@ sub numberOfResults($) { $_[0]->{rpc}->getHits(int => $_[1]) }
 # what does "docid" mean?
 sub describeResultSet($)
 {   my ($rc, $details) = $_[0]->{rpc}->querySummary(int => $_[1]);
-use Data::Dumper;
-warn Dumper $details;
     $rc==0 or return ($rc, $details);
     my $results = struct_to_hash $details;
     if(my $docs = delete $results->{documents})
@@ -578,7 +585,7 @@ sub releaseResultSet($@)
 sub retrieveResult($$@)
 {   my ($self, $set, $pos) = (shift, shift, shift);
     my ($rc, $bytes)
-       = $self->{rpc}->retrieve(int => $set, int => $pos, _format @_);
+       = $self->{rpc}->retrieve(int => $set, int => $pos, $self->_format(@_));
     $rc==0 or return ($rc, $bytes);
     (0, $self->schemas->decodeXML($bytes));
 }
@@ -588,7 +595,8 @@ sub retrieveResult($$@)
 #T
 sub retrieveResults($@)
 {   my ($self, $set) = (shift, shift);
-    my ($rc, $bytes) = $self->{rpc}->retrieveAll(int => $set, _format @_);
+    my ($rc, $bytes) = $self->{rpc}->retrieveAll(int => $set
+      , $self->_format(@_));
     $rc==0 or return ($rc, $bytes);
     (0, $self->schemas->decodeXML($bytes));
 }
@@ -601,11 +609,31 @@ sub query($$$@)
 {   my ($self, $query, $limit) = (shift, shift, shift);
     my $first = @_ % 2 ? shift : 1;
     my ($rc, $bytes) = $self->{rpc}->query(string => $query, int => $limit
-       , int => $first, _format @_);
+       , int => $first, $self->_format(@_));
     $rc==0 or return ($rc, $bytes);
     (0, $self->schemas->decodeXML($bytes));
 }
 
+
+sub queryXPath($$$@)
+{   my ($self, $xpath, $doc, $node) = splice @_, 0, 4;
+    my @args = (base64 => $xpath);
+    push @args, string => $doc, string => (defined $node ? $node : '')
+        if defined $doc;
+    my ($rc, $data) = $self->{rpc}->queryP(@args, $self->_format(@_));
+    $rc==0 or return ($rc, $data);
+
+    my $h = struct_to_hash $data;
+    my @r;
+    foreach (rpcarray_values $h->{results})
+    {   my ($doc, $loc) = rpcarray_values $_;
+        push @r, { document => $doc, node_id => $loc };
+    }
+    $h->{results} = \@r;
+
+    (0, $h);
+}
+ 
 #-----------------
 
 sub retrieveDocumentNode($$@)
@@ -738,7 +766,7 @@ sub getDocumentAsString($$;$$)
 sub getDocumentData($@)
 {   my ($self, $resource) = (shift, shift);
     my ($rc, $details) = $self->{rpc}->getDocumentData(string => $resource
-      , _format @_);
+      , $self->_format(@_));
     $rc==0 or return ($rc, $details);
     (0, struct_to_hash $details);
 }
@@ -789,7 +817,8 @@ sub parseLocalExt($$$$;$$)
    
     $self->{rpc}->parseLocal
       ( string => $fn, string => $res, boolean => $replace
-      , string => $mime, boolean => $is_xml, _date_options($created, $modified)
+      , string => $mime, boolean => $is_xml
+      , _date_options($created, $modified)
       );
 };
 
@@ -820,30 +849,29 @@ sub storeBinary($$$$;$$) { $_[0]->uploadBinary( @_[2, 1, 3, 4, 5, 6] ) }
 
 sub retrieveFirstChunk($$@)
 {   my $self = shift;
-    my ($rc, $details);
+    my @args;
     if($_[0] =~ m/\D/)
     {   my ($docname, $id) = (shift, shift);
-        ($rc, $details) = $self->{rpc}
-           ->retrieveFirstChunk(string => $docname, string => $id, _format @_);
+        @args = (string => $docname, string => $id);
     }
     else
     {   my ($resultset, $pos) = (shift, shift);
-        ($rc, $details) = $self->{rpc}
-           ->retrieveFirstChunk(int => $resultset, int => $pos, _format @_);
+        @args = (int => $resultset, int => $pos);
     }
-    $rc==0 or return ($rc, $details);
-    (0, struct_to_hash $details);
+    my $format = $self->_format(@_);
+    my ($rc, $details) = $self->{rpc}->retrieveFirstChunk(@args, $format);
+    ($rc, $rc==0 ? $details : struct_to_hash $details);
 }
 
 #------------------
 
 sub retrieve($$@)
 {   my $self = shift;
-    my ($rc, $bytes)
-      = $_[0] =~ m/\D/
-      ? $self->{rpc}->retrieve(string => $_[0], string => $_[1], _format @_)
-      : $self->{rpc}->retrieve(int => $_[0], int => $_[1], _format @_);
+    my @args = $_[0] =~ m/\D/
+             ? (string => shift, string => shift)
+             : (int => shift, int => shift);
 
+    my ($rc, $bytes) = $self->{rpc}->retrieve(@args, $self->_format(@_));
     $rc==0 or return ($rc, $bytes);
     (0, $self->schemas->decodeXML($bytes));
 }
@@ -851,7 +879,8 @@ sub retrieve($$@)
 
 sub retrieveAll($$@)
 {   my ($self, $set) = (shift, shift);
-    my ($rc, $bytes) = $self->{rpc}->retrieveAll(int => $set, _format @_);
+    my ($rc, $bytes) = $self->{rpc}->retrieveAll(int => $set
+      , $self->_format(@_));
     $rc==0 or return ($rc, $bytes);
     (0, $self->schemas->decodeXML($bytes));
 }
@@ -859,18 +888,52 @@ sub retrieveAll($$@)
 
 sub retrieveAllFirstChunk($$@)
 {   my ($self, $result) = (shift, shift);
-    my ($rc, $details) = $self->{rpc}
-        ->retrieveAllFirstChunk(int => $result, _format @_);
+    my ($rc, $details)  = $self->{rpc}->retrieveAllFirstChunk(int => $result
+      , $self->_format(@_));
     $rc==0 or return ($rc, $details);
     (0, struct_to_hash $details);
+}
+
+
+sub isValidDocument($)
+{   my ($self, $doc) = (shift, shift);
+    $self->{rpc}->isValid(string => $doc);
+}
+
+
+sub initiateBackup($)
+{   my ($self, $s) = (shift, shift);
+    $self->{rpc}->dataBackup($s);
+}
+
+
+sub getDocumentChunked($@)
+{   my ($self, $doc) = (shift, shift);
+    my ($rc, $data) = $self->{rpc}->getDocumentChunk(string => $doc);
+    $rc==0 or return ($rc, $data);
+    (0, rpcarray_values $data);
+}
+
+
+sub getDocumentNextChunk($$$)
+{   my ($self, $handle, $start, $len) = @_;
+    $self->{rpc}->getDocumentChunck(string => $handle
+      , int => $start, int => $len);
+}
+
+
+sub retrieveAsString($$@)
+{   my ($self, $doc, $node) = (shift, shift, shift);
+    $self->{rpc}->retrieveAsString(string => $doc, string => $node
+      , $self->_format(@_));
 }
 
 #----------------
 
 *createResourceId = \&uniqueResourceName;
+*dataBackup = \&initiateBackup;
 *getBinaryResource = \&downloadBinary;
 *getCreationDate = \&collectionCreationDate;
-*getDocType = \&typeOfResource;
 *getDocumentListing = \&listResources;
 *getGroups = \&listGroups;
 *getHits = \&numberOfResults;
@@ -880,15 +943,14 @@ sub retrieveAllFirstChunk($$@)
 *getUser   = \&describeUser;
 *getUsers  = \&listUsers;
 *hasUserLock = \&whoLockedResource;
+*isValid = \&isValidDocument;
 *listCollectionPermissions = \&describeCollectionPermissions;
 *printDiagnostics = \&describeCompile;
 *querySummary = \&describeResultSet;
+*queryP = \&queryXPath;
 *releaseQueryResult = \&releaseResultSet;
 *remove = \&removeResource;
 *xupdate = \&xupdateCollection;
 *xupdateResource = \&xupdateResource;
-
-
-sub isValid($) { $_[0]->{rpc}->isValid(string => $_[1]) }
 
 1;

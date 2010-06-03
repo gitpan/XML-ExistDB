@@ -1,4 +1,4 @@
-# Copyrights 2009 by Mark Overmeer.
+# Copyrights 2010 by Mark Overmeer.
 #  For other contributors see ChangeLog.
 # See the manual pages for details on the licensing terms.
 # Pod stripped from pm file by OODoc 1.06.
@@ -7,7 +7,7 @@ use strict;
 
 package XML::eXistDB;
 use vars '$VERSION';
-$VERSION = '0.09';
+$VERSION = '0.11';
 
 use base 'XML::Compile::Cache';
 
