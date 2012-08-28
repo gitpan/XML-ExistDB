@@ -43,222 +43,180 @@ the implementation to facilitate different XML databases back-ends.
 
 =head2 Constructors
 
-XML::eXistDB-E<gt>B<new>(OPTIONS)
-
 =over 4
 
- Option            --Defined in     --Default
- allow_undeclared    XML::Compile::Cache  <true>
- any_element         XML::Compile::Cache  'SKIP_ALL'
- block_namespace     XML::Compile::Schema  []
- hook                XML::Compile::Schema  undef
- hooks               XML::Compile::Schema  []
- ignore_unused_tags  XML::Compile::Schema  <false>
- key_rewrite         XML::Compile::Schema  []
- opts_readers                         <sloppy ints and floats>
- opts_rw             XML::Compile::Cache  []
- opts_writers        XML::Compile::Cache  []
- prefixes            XML::Compile::Cache  <smart>
- schema_dirs         XML::Compile     undef
- typemap             XML::Compile::Schema  {}
+=item XML::eXistDB-E<gt>B<new>(OPTIONS)
 
-. allow_undeclared => BOOLEAN
+ -Option            --Defined in     --Default
+  allow_undeclared    XML::Compile::Cache  <true>
+  any_element         XML::Compile::Cache  'SKIP_ALL'
+  block_namespace     XML::Compile::Schema  []
+  hook                XML::Compile::Schema  undef
+  hooks               XML::Compile::Schema  []
+  ignore_unused_tags  XML::Compile::Schema  <false>
+  key_rewrite         XML::Compile::Schema  []
+  opts_readers                         <sloppy ints and floats>
+  opts_rw             XML::Compile::Cache  []
+  opts_writers        XML::Compile::Cache  []
+  parser_options      XML::Compile     <many>
+  prefixes            XML::Compile::Cache  <smart>
+  schema_dirs         XML::Compile     undef
+  typemap             XML::Compile::Cache  {}
+  xsi_type            XML::Compile::Cache  {}
 
-. any_element => CODE|'TAKE_ALL'|'SKIP_ALL'|'ATTEMPT'|'SLOPPY'
+=over 2
 
-. block_namespace => NAMESPACE|TYPE|HASH|CODE|ARRAY
+=item allow_undeclared => BOOLEAN
 
-. hook => ARRAY-WITH-HOOKDATA | HOOK
+=item any_element => CODE|'TAKE_ALL'|'SKIP_ALL'|'ATTEMPT'|'SLOPPY'
 
-. hooks => ARRAY-OF-HOOK
+=item block_namespace => NAMESPACE|TYPE|HASH|CODE|ARRAY
 
-. ignore_unused_tags => BOOLEAN|REGEXP
+=item hook => ARRAY-WITH-HOOKDATA | HOOK
 
-. key_rewrite => HASH|CODE|ARRAY-of-HASH-and-CODE
+=item hooks => ARRAY-OF-HOOK
 
-. opts_readers => []
+=item ignore_unused_tags => BOOLEAN|REGEXP
 
-. opts_rw => HASH|ARRAY-of-PAIRS
+=item key_rewrite => HASH|CODE|ARRAY-of-HASH-and-CODE
 
-. opts_writers => HASH|ARRAY-of-PAIRS
+=item opts_readers => []
 
-. prefixes => HASH|ARRAY-of-PAIRS
+=item opts_rw => HASH|ARRAY-of-PAIRS
 
-. schema_dirs => DIRECTORY|ARRAY-OF-DIRECTORIES
+=item opts_writers => HASH|ARRAY-of-PAIRS
 
-. typemap => HASH
+=item parser_options => HASH|ARRAY
+
+=item prefixes => HASH|ARRAY-of-PAIRS
+
+=item schema_dirs => DIRECTORY|ARRAY-OF-DIRECTORIES
+
+=item typemap => HASH|ARRAY
+
+=item xsi_type => HASH|ARRAY
+
+=back
 
 =back
 
 =head2 Accessors
 
-$obj-E<gt>B<addHook>(HOOKDATA|HOOK|undef)
-
 =over 4
+
+=item $obj-E<gt>B<addCompileOptions>(['READERS'|'WRITERS'|'RW'], OPTIONS)
+
+See L<XML::Compile::Cache/"Accessors">
+
+=item $obj-E<gt>B<addHook>(HOOKDATA|HOOK|undef)
 
 See L<XML::Compile::Schema/"Accessors">
 
-=back
-
-$obj-E<gt>B<addHooks>(HOOK, [HOOK, ...])
-
-=over 4
+=item $obj-E<gt>B<addHooks>(HOOK, [HOOK, ...])
 
 See L<XML::Compile::Schema/"Accessors">
 
-=back
-
-$obj-E<gt>B<addKeyRewrite>(PREDEF|CODE|HASH, ...)
-
-=over 4
+=item $obj-E<gt>B<addKeyRewrite>(PREDEF|CODE|HASH, ...)
 
 See L<XML::Compile::Schema/"Accessors">
 
-=back
+=item $obj-E<gt>B<addSchemaDirs>(DIRECTORIES|FILENAME)
 
-$obj-E<gt>B<addSchemaDirs>(DIRECTORIES|FILENAME)
-
-XML::eXistDB-E<gt>B<addSchemaDirs>(DIRECTORIES|FILENAME)
-
-=over 4
+=item XML::eXistDB-E<gt>B<addSchemaDirs>(DIRECTORIES|FILENAME)
 
 See L<XML::Compile/"Accessors">
 
-=back
-
-$obj-E<gt>B<addSchemas>(XML, OPTIONS)
-
-=over 4
+=item $obj-E<gt>B<addSchemas>(XML, OPTIONS)
 
 See L<XML::Compile::Schema/"Accessors">
 
-=back
-
-$obj-E<gt>B<addTypemap>(PAIR)
-
-=over 4
+=item $obj-E<gt>B<addTypemap>(PAIR)
 
 See L<XML::Compile::Schema/"Accessors">
 
-=back
-
-$obj-E<gt>B<addTypemaps>(PAIRS)
-
-=over 4
+=item $obj-E<gt>B<addTypemaps>(PAIRS)
 
 See L<XML::Compile::Schema/"Accessors">
 
-=back
-
-$obj-E<gt>B<allowUndeclared>([BOOLEAN])
-
-=over 4
+=item $obj-E<gt>B<allowUndeclared>([BOOLEAN])
 
 See L<XML::Compile::Cache/"Accessors">
 
-=back
+=item $obj-E<gt>B<anyElement>('ATTEMPT'|'SLOPPY'|'SKIP_ALL'|'TAKE_ALL'|CODE)
 
-$obj-E<gt>B<blockNamespace>(NAMESPACE|TYPE|HASH|CODE|ARRAY)
+See L<XML::Compile::Cache/"Accessors">
 
-=over 4
+=item $obj-E<gt>B<blockNamespace>(NAMESPACE|TYPE|HASH|CODE|ARRAY)
 
 See L<XML::Compile::Schema/"Accessors">
 
-=back
-
-$obj-E<gt>B<hooks>
-
-=over 4
+=item $obj-E<gt>B<hooks>()
 
 See L<XML::Compile::Schema/"Accessors">
 
-=back
-
-$obj-E<gt>B<prefix>(PREFIX)
-
-=over 4
+=item $obj-E<gt>B<prefix>(PREFIX)
 
 See L<XML::Compile::Cache/"Accessors">
 
-=back
-
-$obj-E<gt>B<prefixFor>(URI)
-
-=over 4
+=item $obj-E<gt>B<prefixFor>(URI)
 
 See L<XML::Compile::Cache/"Accessors">
 
-=back
-
-$obj-E<gt>B<prefixed>(TYPE)
-
-=over 4
+=item $obj-E<gt>B<prefixed>(TYPE)
 
 See L<XML::Compile::Cache/"Accessors">
 
-=back
-
-$obj-E<gt>B<prefixes>([PAIRS|ARRAY|HASH])
-
-=over 4
+=item $obj-E<gt>B<prefixes>([PAIRS|ARRAY|HASH])
 
 See L<XML::Compile::Cache/"Accessors">
 
-=back
+=item $obj-E<gt>B<typemap>([HASH|ARRAY|PAIRS])
 
-$obj-E<gt>B<useSchema>(SCHEMA, [SCHEMA])
+See L<XML::Compile::Cache/"Accessors">
 
-=over 4
+=item $obj-E<gt>B<useSchema>(SCHEMA, [SCHEMA])
 
 See L<XML::Compile::Schema/"Accessors">
+
+=item $obj-E<gt>B<xsiType>([HASH|ARRAY|LIST])
+
+See L<XML::Compile::Cache/"Accessors">
 
 =back
 
 =head2 Compilers
 
-$obj-E<gt>B<compile>(('READER'|'WRITER'), TYPE, OPTIONS)
-
 =over 4
+
+=item $obj-E<gt>B<compile>(('READER'|'WRITER'), TYPE, OPTIONS)
 
 See L<XML::Compile::Schema/"Compilers">
 
-=back
-
-$obj-E<gt>B<compileAll>(['READER'|'WRITER'|'RW', [NAMESPACE]])
-
-=over 4
+=item $obj-E<gt>B<compileAll>(['READERS'|'WRITERS'|'RW', [NAMESPACE]])
 
 See L<XML::Compile::Cache/"Compilers">
 
-=back
+=item $obj-E<gt>B<dataToXML>(NODE|REF-XML-STRING|XML-STRING|FILENAME|FILEHANDLE|KNOWN)
 
-XML::eXistDB-E<gt>B<dataToXML>(NODE|REF-XML-STRING|XML-STRING|FILENAME|FILEHANDLE|KNOWN)
-
-=over 4
+=item XML::eXistDB-E<gt>B<dataToXML>(NODE|REF-XML-STRING|XML-STRING|FILENAME|FILEHANDLE|KNOWN)
 
 See L<XML::Compile/"Compilers">
 
-=back
+=item $obj-E<gt>B<initParser>(OPTIONS)
 
-$obj-E<gt>B<reader>(TYPE|NAME, OPTIONS)
+=item XML::eXistDB-E<gt>B<initParser>(OPTIONS)
 
-=over 4
+See L<XML::Compile/"Compilers">
+
+=item $obj-E<gt>B<reader>(TYPE|NAME, OPTIONS)
 
 See L<XML::Compile::Cache/"Compilers">
 
-=back
-
-$obj-E<gt>B<template>('XML'|'PERL', ELEMENT, OPTIONS)
-
-=over 4
+=item $obj-E<gt>B<template>('XML'|'PERL'|'TREE', ELEMENT, OPTIONS)
 
 See L<XML::Compile::Schema/"Compilers">
 
-=back
-
-$obj-E<gt>B<writer>(TYPE|NAME)
-
-=over 4
+=item $obj-E<gt>B<writer>(TYPE|NAME)
 
 See L<XML::Compile::Cache/"Compilers">
 
@@ -266,147 +224,114 @@ See L<XML::Compile::Cache/"Compilers">
 
 =head2 Administration
 
-$obj-E<gt>B<declare>('READER'|'WRITER'|'RW', TYPE|ARRAY-of-TYPES, OPTIONS)
-
 =over 4
+
+=item $obj-E<gt>B<declare>('READER'|'WRITER'|'RW', TYPE|ARRAY-of-TYPES, OPTIONS)
 
 See L<XML::Compile::Cache/"Administration">
 
-=back
-
-$obj-E<gt>B<elements>
-
-=over 4
+=item $obj-E<gt>B<doesExtend>(EXTTYPE, BASETYPE)
 
 See L<XML::Compile::Schema/"Administration">
 
-=back
+=item $obj-E<gt>B<elements>()
 
-$obj-E<gt>B<findName>(NAME)
+See L<XML::Compile::Schema/"Administration">
 
-=over 4
+=item $obj-E<gt>B<findName>(NAME)
 
 See L<XML::Compile::Cache/"Administration">
 
-=back
+=item $obj-E<gt>B<findSchemaFile>(FILENAME)
 
-$obj-E<gt>B<findSchemaFile>(FILENAME)
+=item XML::eXistDB-E<gt>B<findSchemaFile>(FILENAME)
 
-XML::eXistDB-E<gt>B<findSchemaFile>(FILENAME)
+See L<XML::Compile/"Administration">
 
-=over 4
+=item $obj-E<gt>B<importDefinitions>(XMLDATA, OPTIONS)
+
+See L<XML::Compile::Schema/"Administration">
+
+=item $obj-E<gt>B<knownNamespace>(NAMESPACE|PAIRS)
+
+=item XML::eXistDB-E<gt>B<knownNamespace>(NAMESPACE|PAIRS)
+
+See L<XML::Compile/"Administration">
+
+=item $obj-E<gt>B<namespaces>()
+
+See L<XML::Compile::Schema/"Administration">
+
+=item $obj-E<gt>B<printIndex>([FILEHANDLE], OPTIONS)
+
+See L<XML::Compile::Cache/"Administration">
+
+=item $obj-E<gt>B<types>()
+
+See L<XML::Compile::Schema/"Administration">
+
+=item $obj-E<gt>B<walkTree>(NODE, CODE)
 
 See L<XML::Compile/"Administration">
 
 =back
-
-$obj-E<gt>B<importDefinitions>(XMLDATA, OPTIONS)
-
-=over 4
-
-See L<XML::Compile::Schema/"Administration">
-
-=back
-
-$obj-E<gt>B<knownNamespace>(NAMESPACE|PAIRS)
-
-XML::eXistDB-E<gt>B<knownNamespace>(NAMESPACE|PAIRS)
-
-=over 4
-
-See L<XML::Compile/"Administration">
-
-=back
-
-$obj-E<gt>B<namespaces>
-
-=over 4
-
-See L<XML::Compile::Schema/"Administration">
-
-=back
-
-$obj-E<gt>B<printIndex>([FILEHANDLE], OPTIONS)
-
-=over 4
-
-See L<XML::Compile::Cache/"Administration">
-
-=back
-
-$obj-E<gt>B<types>
-
-=over 4
-
-See L<XML::Compile::Schema/"Administration">
-
-=back
-
-$obj-E<gt>B<walkTree>(NODE, CODE)
-
-=over 4
-
-See L<XML::Compile/"Administration">
-
-=back
-
-=head2 Administration
 
 =head2 Collection configuration (.xconf)
 
-$obj-E<gt>B<createCollectionConfig>(DATA, OPTIONS)
-
 =over 4
+
+=item $obj-E<gt>B<createCollectionConfig>(DATA, OPTIONS)
 
 The DATA structure should provide the needs for an collection configuration
 file, in the shape C<XML::Compile> expects based on the schema. See the
 C<template/collection.xconf>, which is part of the distribution.
 
- Option  --Default
- beautify  <true>
+ -Option  --Default
+  beautify  <true>
 
-. beautify => BOOLEAN
+=over 2
+
+=item beautify => BOOLEAN
 
 =back
 
-$obj-E<gt>B<decodeXML>(STRING)
-
-=over 4
+=item $obj-E<gt>B<decodeXML>(STRING)
 
 Received is a STRING produced by the server. Decode it, into the most
 useful Perl data structure.
 
 =back
 
-=head1 DETAILS
-
 =head1 SEE ALSO
 
-This module is part of XML-ExistDB distribution version 0.11,
-built on June 03, 2010. Website: F<http://perl.overmeer.net/xml-compile/>
+This module is part of XML-ExistDB distribution version 0.12,
+built on August 28, 2012. Website: F<http://perl.overmeer.net/xml-compile/>
 
-All modules in this suite:
+Other distributions in this suite:
 L<XML::Compile>,
 L<XML::Compile::SOAP>,
 L<XML::Compile::SOAP12>,
 L<XML::Compile::SOAP::Daemon>,
+L<XML::Compile::SOAP::WSA>,
+L<XML::Compile::C14N>,
+L<XML::Compile::WSS>,
 L<XML::Compile::Tester>,
 L<XML::Compile::Cache>,
 L<XML::Compile::Dumper>,
 L<XML::Compile::RPC>,
-and
 L<XML::Rewrite>,
-L<XML::ExistDB>,
+L<XML::eXistDB>,
+and
 L<XML::LibXML::Simple>.
 
 Please post questions or ideas to the mailinglist at
 F<http://lists.scsys.co.uk/cgi-bin/mailman/listinfo/xml-compile>
-For life contact with other developers, visit the C<#xml-compile> channel
+For live contact with other developers, visit the C<#xml-compile> channel
 on C<irc.perl.org>.
 
 =head1 LICENSE
 
-Copyrights 2010 by Mark Overmeer. For other contributors see ChangeLog.
+Copyrights 2010-2012 by [Mark Overmeer]. For other contributors see ChangeLog.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

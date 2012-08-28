@@ -20,33 +20,42 @@ L<XML::Compile::Util|XML::Compile::Util>.
 
 None yet.
 
+=head1 CONSTANTS
+
+=head2 namespaces
+
+Defined are: C<NS_COLLECTION_XCONF>, C<NS_EXISTDB>.
+
 =head1 SEE ALSO
 
-This module is part of XML-ExistDB distribution version 0.11,
-built on June 03, 2010. Website: F<http://perl.overmeer.net/xml-compile/>
+This module is part of XML-ExistDB distribution version 0.12,
+built on August 28, 2012. Website: F<http://perl.overmeer.net/xml-compile/>
 
-All modules in this suite:
+Other distributions in this suite:
 L<XML::Compile>,
 L<XML::Compile::SOAP>,
 L<XML::Compile::SOAP12>,
 L<XML::Compile::SOAP::Daemon>,
+L<XML::Compile::SOAP::WSA>,
+L<XML::Compile::C14N>,
+L<XML::Compile::WSS>,
 L<XML::Compile::Tester>,
 L<XML::Compile::Cache>,
 L<XML::Compile::Dumper>,
 L<XML::Compile::RPC>,
-and
 L<XML::Rewrite>,
-L<XML::ExistDB>,
+L<XML::eXistDB>,
+and
 L<XML::LibXML::Simple>.
 
 Please post questions or ideas to the mailinglist at
 F<http://lists.scsys.co.uk/cgi-bin/mailman/listinfo/xml-compile>
-For life contact with other developers, visit the C<#xml-compile> channel
+For live contact with other developers, visit the C<#xml-compile> channel
 on C<irc.perl.org>.
 
 =head1 LICENSE
 
-Copyrights 2010 by Mark Overmeer. For other contributors see ChangeLog.
+Copyrights 2010-2012 by [Mark Overmeer]. For other contributors see ChangeLog.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.
