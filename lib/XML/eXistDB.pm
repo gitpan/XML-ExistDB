@@ -1,13 +1,12 @@
-# Copyrights 2010-2012 by [Mark Overmeer].
+# Copyrights 2010-2014 by [Mark Overmeer].
 #  For other contributors see ChangeLog.
 # See the manual pages for details on the licensing terms.
-# Pod stripped from pm file by OODoc 2.00.
+# Pod stripped from pm file by OODoc 2.01.
 use warnings;
 use strict;
 
 package XML::eXistDB;
-use vars '$VERSION';
-$VERSION = '0.12';
+our $VERSION = '0.13';
 
 use base 'XML::Compile::Cache';
 
@@ -36,7 +35,7 @@ sub init($)
     (my $xsddir = __FILE__) =~ s,\.pm,/xsd-exist,;
     my @xsds    = glob "$xsddir/*.xsd";
 
-    $self->prefixes(exist => NS_EXISTDB);
+    $self->addPrefixes(exist => NS_EXISTDB);
     $self->importDefinitions(\@xsds);
     $self;
 }

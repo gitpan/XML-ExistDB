@@ -1,3 +1,5 @@
+=encoding utf8
+
 =head1 NAME
 
 XML::eXistDB::RPC - access eXist databases via RPC
@@ -78,7 +80,7 @@ the error message.  For instance,
 
 =over 4
 
-=item XML::eXistDB::RPC-E<gt>B<new>(OPTIONS)
+=item XML::eXistDB::RPC-E<gt>B<new>(%options)
 
 You must either specify your own L<XML::Compile::RPC::Client> object
 with the C<rpc> option, or a C<destination> which will be used to create
@@ -187,10 +189,10 @@ a filename.
 
 =over 4
 
-=item $obj-E<gt>B<backup>(USER, PASSWORD, TOCOLL, FROMCOLL)
+=item $obj-E<gt>B<backup>($user, $password, $tocoll, $fromcoll)
 
-Returns success. Create a backup of the FROMCOLL into the TOCOLL, using
-USERname and PASSWORD to write it.  There is also an Xquery function to
+Returns success. Create a backup of the $fromcoll into the $tocoll, using
+$user and $password to write it.  There is also an Xquery function to
 produce backups.
 
 example: 
@@ -198,9 +200,9 @@ example:
   my ($rc, $ok) = $db->backup('sys', 'xxx', '/db/orders', '/db/backup');
   $rc==0 or die "$rc $ok";
 
-=item $obj-E<gt>B<hasCollection>(COLLECTION)
+=item $obj-E<gt>B<hasCollection>($collection)
 
-Does the COLLECTION identified by name exist in the repository?
+Does the $collection identified by name exist in the repository?
 
 example: 
 
@@ -208,7 +210,7 @@ example:
   $rc and die "$exists (RC=$rc)";
   if($exists) ...
 
-=item $obj-E<gt>B<hasDocument>(DOCNAME)
+=item $obj-E<gt>B<hasDocument>($docname)
 
 Returns whether a document with NAME exists in the repository.
 
@@ -227,9 +229,9 @@ example:
   my ($rc, $enabled) = $db->isACMLEnabled;
   if(!$rc && $enable) { ... }
 
-=item $obj-E<gt>B<shutdown>([DELAY])
+=item $obj-E<gt>B<shutdown>( [$delay] )
 
-Shutdown the database.  The DELAY is in milliseconds.
+Shutdown the database.  The $delay is in milliseconds.
 
 example: 
 
@@ -250,9 +252,9 @@ example:
 
 =over 4
 
-=item $obj-E<gt>B<collectionCreationDate>([COLLECTION])
+=item $obj-E<gt>B<collectionCreationDate>( [$collection] )
 
-[non-API] Returns the date of the creation of the COLLECTION, by default
+[non-API] Returns the date of the creation of the $collection, by default
 from the root.
 
 example: 
@@ -261,16 +263,16 @@ example:
   $rc and die "$rc $date";
   print $date;  # f.i. "2009-10-21T12:13:13Z"
 
-=item $obj-E<gt>B<configureCollection>(COLLECTION, CONFIGURATION, OPTIONS)
+=item $obj-E<gt>B<configureCollection>($collection, $configuration, %options)
 
-The CONFIGURATION is a whole C<.xconfig>, describing the collection.
+The $configuration is a whole C<.xconfig>, describing the collection.
 This can be a XML::LibXML::Document node, a stringified XML
 document, or a HASH.
 
-When the CONFIGURATION is a HASH, the data will get formatted
+When the $configuration is a HASH, the data will get formatted
 by L<XML::eXistDB::createCollectionConfig()|XML::eXistDB/"Collection configuration (.xconf)">.
 
-The configuration will be placed in C</db/system/config$COLLECTION>,
+The configuration will be placed in C</db/system/config/$collection>,
 inside the database.
 
  -Option  --Default
@@ -300,17 +302,17 @@ example:
 
   my ($rc, $success) = $db->configureCollection($name, \%config);
 
-=item $obj-E<gt>B<copyCollection>(FROM, TO | (TOCOLL, SUBCOLL))
+=item $obj-E<gt>B<copyCollection>( $from, $to | <$tocoll, $subcoll> )
 
-Copy the FROM collection to a new TO. With three arguments, SUBCOLL
-is a collection within TOCOLL.
+Copy the $from collection to a new $to. With three arguments, $subcoll
+is a collection within $tocoll.
 
 example: 
 
   my ($rc, $succ) = $db->copyCollection('/db/from', '/db/some/to');
   my ($rc, $succ) = $db->copyCollection('/db/from', '/db/some', 'to');
 
-=item $obj-E<gt>B<createCollection>(COLLECTION, [DATE])
+=item $obj-E<gt>B<createCollection>( $collection, [$date] )
 
 Is a success if the collection already exists or can be created.
 
@@ -320,7 +322,7 @@ example: createCollection
   my ($rc, $success) = $db->createCollection($subcoll);
   $rc==0 or die "$rc $success";
 
-=item $obj-E<gt>B<describeCollection>([COLLECTION], OPTIONS)
+=item $obj-E<gt>B<describeCollection>( [$collection], %options )
 
 Returns the RC and a HASH with details.  The details are the same as
 returned with L<getCollectionDesc()|XML::eXistDB::RPC/"Please avoid: collections">, excluding details about
@@ -341,27 +343,27 @@ example:
   $rc and die $rc;
   print Dumper $descr;  # Data::Dumper::Dumper
 
-=item $obj-E<gt>B<listResources>([COLLECTION])
+=item $obj-E<gt>B<listResources>( [$collection] )
 
-[non-API] Returns ... with all documents in the COLLECTION. Without
-COLLECTION, it will list all documents in the whole repository.
+[non-API] Returns ... with all documents in the $collection. Without
+$collection, it will list all documents in the whole repository.
 
 example: 
 
   my ($rc, @elems) = $db->listResources;
   $rc==0 or die "error: $elems[0] ($rc)";
 
-=item $obj-E<gt>B<moveCollection>(FROM, TO | (TOCOLL, SUBCOLL))
+=item $obj-E<gt>B<moveCollection>( $from, $to | <$tocoll, $subcoll> )
 
-Copy the FROM collection to a new TO. With three arguments, SUBCOLL
-is a collection within TOCOLL.
+Copy the $from collection to a new $to. With three arguments, $subcoll
+is a collection within $tocoll.
 
 example: 
 
   my ($rc, $succ) = $db->moveCollection('/db/from', '/db/some/to');
   my ($rc, $succ) = $db->moveCollection('/db/from', '/db/some', 'to');
 
-=item $obj-E<gt>B<reindexCollection>(COLLECTION)
+=item $obj-E<gt>B<reindexCollection>($collection)
 
 Reindex all documents in a certain collection.
 
@@ -371,7 +373,7 @@ example:
    die "error: $success ($rc)" if $rc;
    die "failed" unless $success;
 
-=item $obj-E<gt>B<removeCollection>(COLLECTION)
+=item $obj-E<gt>B<removeCollection>($collection)
 
 Remove an entire collection from the database.
 
@@ -381,7 +383,7 @@ example:
    die "error: $rc $success" if $rc;
    die "failed" unless $success;
 
-=item $obj-E<gt>B<subCollections>([COLLECTION])
+=item $obj-E<gt>B<subCollections>( [$collection] )
 
 [non-API] Returns a list of sub-collections for this collection, based
 on the results of L<describeCollection()|XML::eXistDB::RPC/"Collections">. The returned names are made
@@ -399,19 +401,19 @@ example:
 
 =over 4
 
-=item $obj-E<gt>B<describeCollectionPermissions>([COLLECTION])
+=item $obj-E<gt>B<describeCollectionPermissions>( [$collection] )
 
-Returns the RC and a HASH which shows the permissions on the COLLECTION.
+Returns the RC and a HASH which shows the permissions on the $collection.
 The output of the API is regorously rewritten to simplify implementation.
 
 The HASH contains absolute collection names as keys, and then as values
 a HASH with C<user>, C<group> and C<mode>.
 
-=item $obj-E<gt>B<describeResourcePermissions>(RESOURCE)
+=item $obj-E<gt>B<describeResourcePermissions>($resource)
 
-[non-API] returns HASH with permission details about a RESOURCE>
+[non-API] returns HASH with permission details about a $resource>
 
-=item $obj-E<gt>B<describeUser>(USERNAME)
+=item $obj-E<gt>B<describeUser>($username)
 
 [non-API] returns a HASH with user information.
 
@@ -421,9 +423,9 @@ example:
   $rc==0 or die "error: $info ($rc)";
   my @groups = @{$info->{groups}};
 
-=item $obj-E<gt>B<listDocumentPermissions>([COLLECTION])
+=item $obj-E<gt>B<listDocumentPermissions>( [$collection] )
 
-List the permissions for all resources in the COLLECTION
+List the permissions for all resources in the $collection
 
 =item $obj-E<gt>B<listGroups>()
 
@@ -444,30 +446,30 @@ example:
   my ($rc, @users) = $db->listUsers;
   $rc==0 or die "error $users[0] ($rc)";
 
-=item $obj-E<gt>B<login>(USERNAME, [PASSWORD])
+=item $obj-E<gt>B<login>( $username, [$password] )
 
-[non-API] Change the USERNAME (as known by ExistDB). When you specify
-a non-existing USERNAME or a wrong PASSWORD, you will not get more data
+[non-API] Change the $username (as known by ExistDB). When you specify
+a non-existing $username or a wrong $password, you will not get more data
 from this connection.  The next request will tell.
 
-=item $obj-E<gt>B<removeUser>(USERNAME)
+=item $obj-E<gt>B<removeUser>($username)
 
 Returns true on success.
 
-=item $obj-E<gt>B<setPermissions>(TARGET, PERMISSIONS, [USER, GROUP])
+=item $obj-E<gt>B<setPermissions>( $target, $permissions, [$user, $group] )
 
-The TARGET which is addressed is either a resource or a collection.
+The $target which is addressed is either a resource or a collection.
 
-The PERMISSIONS are specified either as an integer value or using a
+The $permissions are specified either as an integer value or using a
 modification string. The bit encoding of the integer value corresponds
 to Unix conventions (with 'x' is replaced by 'update'). The modification
 string has as syntax:
   [user|group|other]=[+|-][read|write|update][, ...]
 
-=item $obj-E<gt>B<setUser>(USER, PASSWORD, GROUPS, [HOME])
+=item $obj-E<gt>B<setUser>( $user, $password, $groups, [$home] )
 
 Modifies or creates a repository user.
-The PASSWORD is plain-text password. GROUPS are specified as single
+The $password is plain-text password. $groups are specified as single
 scalar or and ARRAY. The first group is the user's primary group.
 
 =back
@@ -476,53 +478,53 @@ scalar or and ARRAY. The first group is the user's primary group.
 
 =over 4
 
-=item $obj-E<gt>B<copyResource>(FROM, TOCOLL, TONAME)
+=item $obj-E<gt>B<copyResource>($from, $tocoll, $toname)
 
 example: 
 
   my ($rc, $success) = $db->copyResource(...);
 
-=item $obj-E<gt>B<countResources>([COLLECTION])
+=item $obj-E<gt>B<countResources>( [$collection] )
 
-[non-API] Returns the number of resources in the COLLECTION.
+[non-API] Returns the number of resources in the $collection.
 
 example: 
 
   my ($rc, $count) = $db->countResources($collection);
 
-=item $obj-E<gt>B<describeResource>(RESOURCE)
+=item $obj-E<gt>B<describeResource>($resource)
 
-Returns details about a RESOURCE (which is a document or a binary).
+Returns details about a $resource (which is a document or a binary).
 
 example: 
 
   my ($rc, $details) = $db->describeResource($resource);
 
-=item $obj-E<gt>B<getDocType>(DOCUMENT)
+=item $obj-E<gt>B<getDocType>($document)
 
-Returns details about the DOCUMENT, the docname, public-id and system-id
+Returns details about the $document, the docname, public-id and system-id
 as list of three.
 
 example: 
 
   my ($docname, $public, $system) = $db->getDocType($doc);
 
-=item $obj-E<gt>B<lockResource>(RESOURCE, [USERNAME])
+=item $obj-E<gt>B<lockResource>( $resource, [$username] )
 
-=item $obj-E<gt>B<moveResource>(FROM, TOCOLL, TONAME)
+=item $obj-E<gt>B<moveResource>($from, $tocoll, $toname)
 
 example: 
 
   my ($rc, $success) = $db->moveResource(...);
 
-=item $obj-E<gt>B<removeResource>(DOCNAME)
+=item $obj-E<gt>B<removeResource>($docname)
 
 [non-API] remove a DOCument from the repository by NAME.  This method's name
 is more consistent than the official API name C<remove()>.
 
-=item $obj-E<gt>B<setDocType>(DOCUMENT, TYPENAME, PUBLIC_ID, SYSTEM_ID)
+=item $obj-E<gt>B<setDocType>($document, $typename, $public_id, $system_id)
 
-Add DOCTYPE information to a DOCUMENT.
+Add DOCTYPE information to a $document.
 
 example: 
 
@@ -535,20 +537,20 @@ Will add to the document
   <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
    "http://www.w3.org/TR/html4/loose.dtd">
 
-=item $obj-E<gt>B<uniqueResourceName>([COLLECTION])
+=item $obj-E<gt>B<uniqueResourceName>( [$collection] )
 
 Produces a random (and hopefully unique) resource-id (string) within
-the COLLECTION.  The returned id looks something like C<fe7c6ea4.xml>.
+the $collection.  The returned id looks something like C<fe7c6ea4.xml>.
 
 example: 
 
   my ($rc, $id) = $db->uniqueResourceName($coll);
 
-=item $obj-E<gt>B<unlockResource>(RESOURCE)
+=item $obj-E<gt>B<unlockResource>($resource)
 
 Returns its success.
 
-=item $obj-E<gt>B<whoLockedResource>(RESOURCE)
+=item $obj-E<gt>B<whoLockedResource>($resource)
 
 [non-API] Returns a username.
 
@@ -558,11 +560,11 @@ Returns its success.
 
 =over 4
 
-=item $obj-E<gt>B<downloadDocument>(RESOURCE, FORMAT)
+=item $obj-E<gt>B<downloadDocument>($resource, $format)
 
 Returns a document as byte array.
 
-=item $obj-E<gt>B<listResourceTimestamps>(RESOURCE)
+=item $obj-E<gt>B<listResourceTimestamps>($resource)
 
 [non-API] Returns the creation and modification dates.
 
@@ -577,7 +579,7 @@ example:
 
 =over 4
 
-=item $obj-E<gt>B<downloadBinary>(RESOURCE)
+=item $obj-E<gt>B<downloadBinary>($resource)
 
 [non-API] Get the bytes of a binary file from the server.
 
@@ -585,15 +587,15 @@ example:
 
   my ($rc, $bytes) = $db->downloadBinary($resource);
 
-=item $obj-E<gt>B<uploadBinary>(RESOURCE, BYTES, MIME, REPLACE, [CREATED, MODIFIED])
+=item $obj-E<gt>B<uploadBinary>( $resource, $bytes, $mime, $replace, [$created, $modified] )
 
-[non-API] The BYTES can be passed as string or better as string reference.
+[non-API] The $bytes can be passed as string or better as string reference.
 
 example: 
 
   my ($rc, $ok) = $db->storeBinaryResource($name, $bytes, 'text/html', 1);
 
-=item $obj-E<gt>B<uploadDocument>(RESOURCE, DOCUMENT, OPTIONS)
+=item $obj-E<gt>B<uploadDocument>($resource, $document, %options)
 
 [non-API] Hide all the different kinds of uploads via L<parse()|XML::eXistDB::RPC/"Please avoid: uploading documents"> or
 L<upload()|XML::eXistDB::RPC/"Please avoid: uploading documents"> behind one interface.
@@ -640,16 +642,16 @@ transmit the data to the server.
 
 =over 4
 
-=item $obj-E<gt>B<compile>(QUERY, FORMAT)
+=item $obj-E<gt>B<compile>($query, $format)
 
 Returns a HASH.
 
-=item $obj-E<gt>B<describeCompile>(QUERY, FORMAT)
+=item $obj-E<gt>B<describeCompile>($query, $format)
 
 [non-API] Returns a string which contains the diagnostics of compiling
 the query.
 
-=item $obj-E<gt>B<execute>(QUERYHANDLE, FORMAT)
+=item $obj-E<gt>B<execute>($queryhandle, $format)
 
 Returns a HASH.
 
@@ -659,16 +661,16 @@ Returns a HASH.
 
 =over 4
 
-=item $obj-E<gt>B<describeResultSet>(RESULTSET)
+=item $obj-E<gt>B<describeResultSet>($resultset)
 
 [non-API] Retrieve a summary of the result set identified by it's
 result-set-id. This method returns a HASH with simple values
 C<queryTime> (milli-seconds) and C<hits> (number of results).
 Besides, it contains complex structures C<documents> and C<doctypes>.
 
-=item $obj-E<gt>B<executeQuery>(QUERY, [ENCODING], [FORMAT])
+=item $obj-E<gt>B<executeQuery>( $query, [$encoding], [$format] )
 
-Run the QUERY given in the specified ENCODING.  Returned is
+Run the $query given in the specified $encoding.  Returned is
 only an identifier to the result.
 
 example: 
@@ -678,21 +680,21 @@ example:
    my ($rc3, @data)  = $db->retrieveResults($set);
    $db->releaseResults($set);
 
-=item $obj-E<gt>B<numberOfResults>(RESULTSET)
+=item $obj-E<gt>B<numberOfResults>($resultset)
 
 [non-API] Returns the number of answers in the RESULT set of a query.
 Replaces C<getHits()>.
 
-=item $obj-E<gt>B<releaseResultSet>(RESULTSET, [PARAMS])
+=item $obj-E<gt>B<releaseResultSet>( $resultset, [$params] )
 
-[non-API] Give-up on the RESULTSET on the server.
+[non-API] Give-up on the $resultset on the server.
 
-=item $obj-E<gt>B<retrieveResult>(RESULTSET, POS, [FORMAT])
+=item $obj-E<gt>B<retrieveResult>( $resultset, $pos, [$format] )
 
 [non-API] retrieve a single result from the RESULT-SET.
 Replaces L<retrieve()|XML::eXistDB::RPC/"Please avoid: collect query results"> and L<retrieveFirstChunk()|XML::eXistDB::RPC/"Please avoid: simple node queries">.
 
-=item $obj-E<gt>B<retrieveResults>(RESULTSET, [FORMAT])
+=item $obj-E<gt>B<retrieveResults>( $resultset, [$format] )
 
 Replaces L<retrieveAll()|XML::eXistDB::RPC/"Please avoid: collect query results"> and L<retrieveAllFirstChunk()|XML::eXistDB::RPC/"Please avoid: collect query results">.
 
@@ -702,14 +704,14 @@ Replaces L<retrieveAll()|XML::eXistDB::RPC/"Please avoid: collect query results"
 
 =over 4
 
-=item $obj-E<gt>B<query>(QUERY, LIMIT, [FIRST], [FORMAT])
+=item $obj-E<gt>B<query>( $query, $limit, [$first], [$format] )
 
 Returns a document of the collected results.
 
 This method is deprecated according to the java description, in favor of
 L<executeQuery()|XML::eXistDB::RPC/"Query returns result as set">, however often used for its simplicity.
 
-=item $obj-E<gt>B<queryXPath>(XPATH, DOCNAME, NODE_ID, OPTIONS)
+=item $obj-E<gt>B<queryXPath>($xpath, $docname, $node_id, %options)
 
 When DOCUMENT is defined, then the search is limited to that document,
 optionally further restricted to the NODE with the indicated ID.
@@ -724,7 +726,7 @@ example:
 
 =over 4
 
-=item $obj-E<gt>B<retrieveDocumentNode>(DOCUMENT, NODEID, [FORMAT])
+=item $obj-E<gt>B<retrieveDocumentNode>( $document, $nodeid, [$format] )
 
 [non-API] Collect one node from a certain document. Doesn't matter
 how large: this method will always work (by always using chunks).
@@ -735,7 +737,7 @@ how large: this method will always work (by always using chunks).
 
 =over 4
 
-=item $obj-E<gt>B<updateCollection>(COLLECTION, XUPDATE)
+=item $obj-E<gt>B<updateCollection>($collection, $xupdate)
 
 [non-API]
 
@@ -743,7 +745,7 @@ example:
 
   my ($rc, $some_int) = $db->updateCollection($coll, $xupdate);
 
-=item $obj-E<gt>B<updateResource>(RESOURCE, XUPDATE, [ENCODING])
+=item $obj-E<gt>B<updateResource>( $resource, $xupdate, [$encoding] )
 
 example: 
 
@@ -755,11 +757,11 @@ example:
 
 =over 4
 
-=item $obj-E<gt>B<getIndexedElements>(COLLECTION, RECURSIVE)
+=item $obj-E<gt>B<getIndexedElements>($collection, $recursive)
 
-=item $obj-E<gt>B<scanIndexTerms>(COLLECTION, BEGIN, END, RECURSIVE)
+=item $obj-E<gt>B<scanIndexTerms>($collection, $begin, $end, $recursive)
 
-or C<< $db->scanIndexTerms(XPATH, BEGIN, END) >>.
+or C<< $db->scanIndexTerms(XPATH, $begin, $end) >>.
 
 example: 
 
@@ -779,7 +781,7 @@ avoid using the methods described in this section (although they do work)
 
 =over 4
 
-=item $obj-E<gt>B<getCollectionDesc>([COLLECTION])
+=item $obj-E<gt>B<getCollectionDesc>( [$collection] )
 
 Please use L<describeCollection()|XML::eXistDB::RPC/"Collections"> with option C<< documents => 0 >>.
 
@@ -789,18 +791,18 @@ Please use L<describeCollection()|XML::eXistDB::RPC/"Collections"> with option C
 
 =over 4
 
-=item $obj-E<gt>B<getDocument>(RESOURCE, FORMAT|(ENCODING, PRETTY, STYLE))
+=item $obj-E<gt>B<getDocument>( $resource, $format|<$encoding, $pretty, $style> )
 
-Please use L<downloadDocument()|XML::eXistDB::RPC/"Download documents">.  Either specify FORMAT parameters
+Please use L<downloadDocument()|XML::eXistDB::RPC/"Download documents">.  Either specify $format parameters
 (a list of pairs), or three arguments.  In the latter case, the
-STYLE must be present but may be C<undef>.  STYLE refers to a
+$style must be present but may be C<undef>.  $style refers to a
 stylesheet document.
 
-=item $obj-E<gt>B<getDocumentAsString>(RESOURCE, FORMAT|(ENCODING, PRETTY, STYLE))
+=item $obj-E<gt>B<getDocumentAsString>( $resource, $format|<$encoding, $pretty, $style> )
 
 Please use L<downloadDocument()|XML::eXistDB::RPC/"Download documents">. See L<getDocument()|XML::eXistDB::RPC/"Please avoid: download documents">.
 
-=item $obj-E<gt>B<getDocumentData>(RESOURCE, FORMAT)
+=item $obj-E<gt>B<getDocumentData>($resource, $format)
 
 Please use L<downloadDocument()|XML::eXistDB::RPC/"Download documents">.
 Retrieve the specified document, but limit the number of bytes
@@ -822,12 +824,12 @@ example:
    }
    $rc==0 or die "error: $chunk ($rc)";
 
-=item $obj-E<gt>B<getNextChunk>(TMPNAME, OFFSET)
+=item $obj-E<gt>B<getNextChunk>($tmpname, $offset)
 
 Collect the next chunk, initiated with a L<getDocumentData()|XML::eXistDB::RPC/"Please avoid: download documents">. The file
 is limited to 2GB.
 
-=item $obj-E<gt>B<getNextExtendedChunk>(TMPNAME, OFFSET)
+=item $obj-E<gt>B<getNextExtendedChunk>($tmpname, $offset)
 
 Collect the next chunk, initiated with a L<getDocumentData()|XML::eXistDB::RPC/"Please avoid: download documents">. This method
 can only be used with servers which run an eXist which supports long files.
@@ -838,39 +840,39 @@ can only be used with servers which run an eXist which supports long files.
 
 =over 4
 
-=item $obj-E<gt>B<parse>(DOCUMENT, RESOURCE, [REPLACE, [CREATED, MODIFIED]])
+=item $obj-E<gt>B<parse>( $document, $resource, [$replace, [$created, $modified]] )
 
 Please use L<uploadDocument()|XML::eXistDB::RPC/"Upload documents">.
-Store the DOCUMENT of a document under the RESOURCE name into the
-repository. When REPLACE is true, it will overwrite an existing document
+Store the $document of a document under the $resource name into the
+repository. When $replace is true, it will overwrite an existing document
 when it exists.
 
 The DATA can be a string containing XML or XML::LibXML::Document.
 
-=item $obj-E<gt>B<parseLocal>(TEMPNAME, RESOURCE, REPLACE, MIME, [CREATED, MODIFIED])
+=item $obj-E<gt>B<parseLocal>( $tempname, $resource, $replace, $mime, [$created, $modified] )
 
 Please use L<uploadDocument()|XML::eXistDB::RPC/"Upload documents">.
 Put the content of document which was just oploaded to the server under some
-TEMPNAME (received from L<upload()|XML::eXistDB::RPC/"Please avoid: uploading documents">), as RESOURCE in the database.
+$tempname (received from L<upload()|XML::eXistDB::RPC/"Please avoid: uploading documents">), as $resource in the database.
 
 NB: B<Local> means "server local", which is remote for us as clients.
 
-=item $obj-E<gt>B<parseLocalExt>(TEMPNAME, RESOURCE, REPLACE, MIME, ISXML, [CREATED, MODIFIED])
+=item $obj-E<gt>B<parseLocalExt>( $tempname, $resource, $replace, $mime, $isxml, [$created, $modified] )
 
 Please use L<uploadDocument()|XML::eXistDB::RPC/"Upload documents">.
 Put the content of document which was just oploaded with L<upload()|XML::eXistDB::RPC/"Please avoid: uploading documents"> to
-the server under some TEMPNAME (received from L<upload()|XML::eXistDB::RPC/"Please avoid: uploading documents">) as RESOURCE
-in the database. Like L<parseLocal()|XML::eXistDB::RPC/"Please avoid: uploading documents">, but with extra C<ISXML> boolean,
+the server under some $tempname (received from L<upload()|XML::eXistDB::RPC/"Please avoid: uploading documents">) as $resource
+in the database. Like L<parseLocal()|XML::eXistDB::RPC/"Please avoid: uploading documents">, but with extra C<$isxml> boolean,
 to indicate that the object is XML, where the server does not know that
 from the mime-type.
 
 NB: B<Local> means "server local", which is remote for us as clients.
 
-=item $obj-E<gt>B<storeBinary>(BYTES, RESOURCE, MIME, REPLACE, [CREATED, MODIFIED])
+=item $obj-E<gt>B<storeBinary>( $bytes, $resource, $mime, $replace, [$created, $modified] )
 
 Please use L<uploadBinary()|XML::eXistDB::RPC/"Upload documents">.
 
-=item $obj-E<gt>B<upload>([TEMPNAME], CHUNK)
+=item $obj-E<gt>B<upload>( [$tempname], $chunk )
 
 Please use L<uploadDocument()|XML::eXistDB::RPC/"Upload documents">.
 Upload a document in parts to the server. The first upload will give
@@ -891,7 +893,7 @@ example:
    my ($rc3, $ok)   = $db->parseLocal($tmp, '/db/file.xml', 0, 'text/xml')
       if $rc1==0 && $rc2==0;
 
-=item $obj-E<gt>B<uploadCompressed>([TEMPNAME], CHUNK)
+=item $obj-E<gt>B<uploadCompressed>( [$tempname], $chunk )
 
 Please use L<uploadDocument()|XML::eXistDB::RPC/"Upload documents">.
 Like L<upload()|XML::eXistDB::RPC/"Please avoid: uploading documents">, although the chunks are part of a compressed file.
@@ -902,7 +904,7 @@ Like L<upload()|XML::eXistDB::RPC/"Please avoid: uploading documents">, although
 
 =over 4
 
-=item $obj-E<gt>B<retrieveFirstChunk>((DOCUMENT, NODEID)|(RESULTSET, POS), [FORMAT])
+=item $obj-E<gt>B<retrieveFirstChunk>( <($doc, $nodeid) | ($resultset, $pos)>, [$format] )
 
 Please use L<retrieveDocumentNode()|XML::eXistDB::RPC/"Simple node queries"> or L<retrieveResult()|XML::eXistDB::RPC/"Query returns result as set">.
 Two very different uses for this method: either retrieve the first part
@@ -915,7 +917,7 @@ answer in a result set.  See L<getNextChunk()|XML::eXistDB::RPC/"Please avoid: d
 
 =over 4
 
-=item $obj-E<gt>B<getDocumentChunked>(DOCNAME, OPTIONS)
+=item $obj-E<gt>B<getDocumentChunked>($docname, %options)
 
 Please use L<downloadDocument()|XML::eXistDB::RPC/"Download documents">
 
@@ -924,31 +926,31 @@ example:
    my ($rc, $handle, $total_length) = $db->getDocumentChuncked($doc);
    my $xml = $db->getDocumentNextChunk($handle, 0, $total_length-1);
 
-=item $obj-E<gt>B<getDocumentNextChunk>(HANDLE, START, LENGTH)
+=item $obj-E<gt>B<getDocumentNextChunk>($handle, $start, $length)
 
-=item $obj-E<gt>B<initiateBackup>(DIRECTORY)
+=item $obj-E<gt>B<initiateBackup>($directory)
 
-Trigger the backup task to write to the DIRECTORY. Returns true, always,
+Trigger the backup task to write to the $directory. Returns true, always,
 but that does not mean success: the initiation will succeed.
 
-=item $obj-E<gt>B<isValidDocument>(DOCUMENT)
+=item $obj-E<gt>B<isValidDocument>($document)
 
-Returns true when the DOCUMENT (inside the database) is validated as
+Returns true when the $document (inside the database) is validated as
 correct.
 
-=item $obj-E<gt>B<retrieve>((DOCUMENT, NODEID)|(RESULTSET, POS), [FORMAT])
+=item $obj-E<gt>B<retrieve>( <($doc, $nodeid) | ($resultset, $pos)>, [$format] )
 
 Please use L<retrieveResult()|XML::eXistDB::RPC/"Query returns result as set"> or L<retrieveDocumentNode()|XML::eXistDB::RPC/"Simple node queries">.
 
-=item $obj-E<gt>B<retrieveAll>(RESULTSET, [FORMAT])
+=item $obj-E<gt>B<retrieveAll>( $resultset, [$format] )
 
 Please use L<retrieveResults()|XML::eXistDB::RPC/"Query returns result as set">.
 
-=item $obj-E<gt>B<retrieveAllFirstChunk>(RESULTSET, [FORMAT])
+=item $obj-E<gt>B<retrieveAllFirstChunk>( $resultset, [$format] )
 
 Please use L<retrieveResults()|XML::eXistDB::RPC/"Query returns result as set">.
 
-=item $obj-E<gt>B<retrieveAsString>(DOCUMENT, NODEID, OPTIONS)
+=item $obj-E<gt>B<retrieveAsString>($document, $nodeid, %options)
 
 =back
 
@@ -958,7 +960,7 @@ Quite a number of API methods have been renamed to be more consistent
 with other names.  Using the new names should improve readibility. The
 original names are still available:
 
-  -- xml-rpc name              -- replacement name
+  -- xml-rpc name           -- replacement name
   createResourceId          => uniqueResourceName
   dataBackup                => initiateBackup
   getBinaryResource         => downloadBinary
@@ -993,34 +995,35 @@ original names are still available:
 
 =head1 SEE ALSO
 
-This module is part of XML-ExistDB distribution version 0.12,
-built on August 28, 2012. Website: F<http://perl.overmeer.net/xml-compile/>
+This module is part of XML-ExistDB distribution version 0.13,
+built on January 22, 2014. Website: F<http://perl.overmeer.net/xml-compile/>
 
 Other distributions in this suite:
 L<XML::Compile>,
 L<XML::Compile::SOAP>,
+L<XML::Compile::WSDL11>,
 L<XML::Compile::SOAP12>,
 L<XML::Compile::SOAP::Daemon>,
 L<XML::Compile::SOAP::WSA>,
 L<XML::Compile::C14N>,
 L<XML::Compile::WSS>,
+L<XML::Compile::WSS::Signature>,
 L<XML::Compile::Tester>,
 L<XML::Compile::Cache>,
 L<XML::Compile::Dumper>,
 L<XML::Compile::RPC>,
-L<XML::Rewrite>,
-L<XML::eXistDB>,
+L<XML::Rewrite>
 and
 L<XML::LibXML::Simple>.
 
 Please post questions or ideas to the mailinglist at
-F<http://lists.scsys.co.uk/cgi-bin/mailman/listinfo/xml-compile>
+F<http://lists.scsys.co.uk/cgi-bin/mailman/listinfo/xml-compile> .
 For live contact with other developers, visit the C<#xml-compile> channel
 on C<irc.perl.org>.
 
 =head1 LICENSE
 
-Copyrights 2010-2012 by [Mark Overmeer]. For other contributors see ChangeLog.
+Copyrights 2010-2014 by [Mark Overmeer]. For other contributors see ChangeLog.
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.
